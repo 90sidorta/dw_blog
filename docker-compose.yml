@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+
+  web:
+    build:
+      context: .
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/fastapi_sqlmodel
+    ports:
+      - 8080:8000
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15.3
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    expose:
+      - 5432
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 9000:8080
+
+volumes:
+  postgres_data:

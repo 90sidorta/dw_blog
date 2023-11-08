@@ -1,0 +1,1 @@
+This is my minimal boilerplate for sqlmodel + fastapi
