@@ -8,7 +8,7 @@ from sqlmodel import SQLModel
 
 from alembic import context
 
-from dw_blog.models import Song, User
+from dw_blog.models import Song, User, Comment, Post
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

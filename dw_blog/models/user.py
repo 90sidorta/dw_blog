@@ -53,6 +53,20 @@ class UserCreate(UserBase):
         regex=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
     )
 
+    class Config:
+        anystr_strip_whitespace = True
+        schema_extra = {
+            "example": {
+                "nickname": "crazy_user_2137",
+                "user_type": UserType.regular,
+                "password": "testtest2!",
+                "confirm_password": "testtest2!",
+                "email": "crazy_user_2137@test.com",
+                "confirm_email": "crazy_user_2137@test.com",
+                "description": "Very descriptive description",
+            }
+        }
+
 
 class UserRead(SQLModel):
     id: uuid.UUID
@@ -83,6 +97,18 @@ class UserUpdate(SQLModel):
     )
     new_password: Optional[str] = Field(nullable=True)
     confirm_password: Optional[str] = Field(nullable=True, min_length=5, max_length=100)
+    class Config:
+        anystr_strip_whitespace = True
+        schema_extra = {
+            "example": {
+                "user_type": UserType.regular,
+                "new_email": "testtest22!",
+                "confirm_password": "testtest22!",
+                "new_email": "crazy1_user_2137@test.com",
+                "confirm_email": "crazy1_user_2137@test.com",
+                "description": "Very descriptive description1",
+            }
+        }
 
 
 class UserdDelete(SQLModel):
