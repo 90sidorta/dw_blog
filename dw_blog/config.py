@@ -20,4 +20,7 @@ class Settings(BaseSettings):
     DATABASE_URL_TEST_SYNC: str = (
         f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_SERVER}:{DP_PORT}/{DB_TEST_NAME}"
     )
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "this_is_a_secret_number_2137")
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
+    TOKEN_EXPIRATION: int = int(os.getenv("TOKEN_EXPIRATION", 720))
     ROOT_DIR: DirectoryPath = Field(Path(__file__).parent.resolve(), const=True)

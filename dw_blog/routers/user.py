@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, status, Query
 
 from dw_blog.models.user import User, UserCreate, UserRead, UserType, UserUpdate, UserdDelete
 from dw_blog.services.user import UserService, get_user_service
+from dw_blog.utils.auth import get_current_user
+from dw_blog.models.auth import AuthUser
 
 router = APIRouter()
 
@@ -16,9 +18,9 @@ router = APIRouter()
 )
 async def add_user(
     request: UserCreate,
-    example_service: UserService = Depends(get_user_service),
+    user_service: UserService = Depends(get_user_service),
 ):
-    return await example_service.create(**request.dict())
+    return await user_service.create(**request.dict())
 
 
 @router.get(
@@ -28,9 +30,9 @@ async def add_user(
 )
 async def get_user(
     user_id: UUID,
-    example_service: UserService = Depends(get_user_service),
+    user_service: UserService = Depends(get_user_service),
 ):
-    return await example_service.get(user_id=user_id)
+    return await user_service.get(user_id=user_id)
 
 
 @router.get(
@@ -42,9 +44,9 @@ async def list_users(
     users_ids: Optional[List[UUID]] = Query(None),
     nickname: Optional[str] = None,
     user_type: Optional[UserType] = None,
-    example_service: UserService = Depends(get_user_service),
+    user_service: UserService = Depends(get_user_service),
 ):
-    return await example_service.list(
+    return await user_service.list(
         users_ids=users_ids,
         nickname=nickname,
         user_type=user_type
@@ -59,17 +61,27 @@ async def list_users(
 async def update_user(
     user_id: UUID,
     request: UserUpdate,
-    example_service: UserService = Depends(get_user_service),
+    user_service: UserService = Depends(get_user_service),
+    current_user: AuthUser = Depends(get_current_user),
 ):
-    return await example_service.update(user_id, **request.dict())
+    return await user_service.update(
+        user_id=user_id,
+        current_user=current_user,
+        **request.dict(),
+    )
+
 
 @router.delete(
     "",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_user(
-    user_id: UUID,
-    example_service: UserService = Depends(get_user_service),
+    user_id: UserdDelete,
+    user_service: UserService = Depends(get_user_service),
+    current_user: AuthUser = Depends(get_current_user),
 ):
-    await example_service.delete(user_id=user_id)
+    await user_service.delete(
+        user_id=user_id,
+        current_user=current_user,
+    )
     return

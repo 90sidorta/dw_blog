@@ -7,8 +7,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
 from dw_blog.models.user import User, UserType, UserRead
+from dw_blog.models.auth import AuthUser
 from dw_blog.db.db import get_session
-from dw_blog.utils.hash import get_password_hash
+from dw_blog.utils.auth import get_password_hash, check_user
 
 
 class UserService:
@@ -48,9 +49,15 @@ class UserService:
 
     async def get(
         self,
-        user_id: UUID,
-    ) -> UserRead:
-        q = select(User).where(User.id == user_id)
+        user_id: Optional[UUID] = None,
+        user_email: Optional[str] = None,
+    ):
+        q = select(User)
+        if user_id:
+            q = q.where(User.id == user_id)
+        elif user_email:
+            q = q.where(User.email == user_email)
+
         result = await self.db_session.exec(q)
         user = result.first()
 
@@ -79,6 +86,7 @@ class UserService:
     async def update(
         self,
         user_id: UUID,
+        current_user: AuthUser,
         user_type: Optional[UserType] = None,
         description: Optional[str] = None,
         new_email: Optional[str] = None,
@@ -87,10 +95,13 @@ class UserService:
         confirm_password: Optional[str] = None,
     ) -> UserRead:
         # Check if user exists
-        self.get(user_id=user_id)
-        # Get whole user object
-        user_result = await self.db_session.exec(select(User).where(User.id == user_id))
-        user = user_result.first()
+        user = await self.get(user_id=user_id)
+        # Chek user permissions
+        check_user(
+            user_id=str(user_id),
+            current_user_id=str(current_user["user_id"]),
+            user_type=user.user_type,
+        )
 
         if user_type:
             user.user_type = user_type
@@ -139,8 +150,17 @@ class UserService:
     async def delete(
         self,
         user_id: UUID,
+        current_user: AuthUser,
     ):
-        user = self.get(user_id=user_id)
+        # Check if user exists
+        user = await self.get(user_id=user_id)
+        # Chek user permissions
+        check_user(
+            user_id=str(user_id),
+            current_user_id=str(current_user["user_id"]),
+            user_type=user.user_type,
+        )
+
         try:
             self.db_session.delete(user)
             self.db_session.commit()

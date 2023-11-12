@@ -112,4 +112,4 @@ class UserUpdate(SQLModel):
 
 
 class UserdDelete(SQLModel):
-    id: uuid.UUID
+    user_id: uuid.UUID
