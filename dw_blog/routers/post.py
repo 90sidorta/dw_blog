@@ -16,7 +16,7 @@ router = APIRouter()
     response_model=PostRead,
     status_code=status.HTTP_201_CREATED,
 )
-async def add_user(
+async def add_post(
     request: PostCreate,
     post_service: PostService = Depends(get_post_service),
     current_user: AuthUser = Depends(get_current_user),
@@ -27,16 +27,16 @@ async def add_user(
     )
 
 
-# @router.get(
-#     "/{user_id}",
-#     response_model=UserRead,
-#     status_code=status.HTTP_200_OK,
-# )
-# async def get_user(
-#     user_id: UUID,
-#     example_service: UserService = Depends(get_user_service),
-# ):
-#     return await example_service.get(user_id=user_id)
+@router.get(
+    "/{post_id}",
+    response_model=PostRead,
+    status_code=status.HTTP_200_OK,
+)
+async def get_post(
+    post_id: UUID,
+    post_service: PostService = Depends(get_post_service),
+):
+    return await post_service.get(post_id=post_id)
 
 
 # @router.get(
@@ -44,9 +44,8 @@ async def add_user(
 #     response_model=List[UserRead],
 #     status_code=status.HTTP_200_OK,
 # )
-# async def list_users(
+# async def list_posts(
 #     users_ids: Optional[List[UUID]] = Query(None),
-#     nickname: Optional[str] = None,
 #     user_type: Optional[UserType] = None,
 #     example_service: UserService = Depends(get_user_service),
 # ):

@@ -4,6 +4,8 @@ from datetime import datetime
 
 from sqlmodel import SQLModel, Field, Relationship
 
+from dw_blog.models.tag import Tag, TagPosts
+
 
 class PostBase(SQLModel):
     text: str = Field(
@@ -25,6 +27,7 @@ class Post(PostBase, table=True):
         index=True
     )
     comments: List["Comment"] = Relationship(back_populates="post")
+    tags: List[Tag] = Relationship(back_populates="posts", link_model=TagPosts)
 
 
 class PostCreate(SQLModel):

@@ -73,7 +73,7 @@ def check_user(
         )
 
 
-async def check_if_author(
+def check_if_author(
     user_type: UserType,
 ):
     return user_type == UserType.author

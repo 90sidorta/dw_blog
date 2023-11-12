@@ -24,35 +24,47 @@ class PostService:
         current_user: AuthUser,
         text: str,
     ) -> PostRead:
-        user = self.user_service.get(user_id=str(current_user["user_id"]))
+        user = await self.user_service.get(
+            user_id=str(current_user["user_id"])
+        )
         is_author = check_if_author(user.user_type)
+
         try:
             post = Post(
                 text=text,
                 date_created=datetime.now(),
                 date_modified=datetime.now(),
                 published=is_author,
+                author_id=user.id,
+                author_nickname=user.nickname,
             )
             self.db_session.add(post)
             await self.db_session.commit()
             await self.db_session.refresh(post)
         except Exception:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to add post!")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to add post!",
+            )
+
         return post
 
-    # async def get(
-    #     self,
-    #     user_id: UUID,
-    # ) -> UserRead:
-    #     q = select(User).where(User.id == user_id)
-    #     result = await self.db_session.exec(q)
-    #     user = result.first()
+    async def get(
+        self,
+        post_id: UUID,
+    ) -> PostRead:
+        q = select(Post).where(Post.id == post_id)
+        result = await self.db_session.exec(q)
+        post = result.first()
 
-    #     if user is None:
-    #         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        if post is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Post not found!"
+            )
         
-    #     return user
-    
+        return post
+
     # async def list(
     #     self,
     #     users_ids: Optional[List[UUID]],

@@ -42,11 +42,9 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_comment_id'), 'comment', ['id'], unique=False)
-    op.add_column('user', sa.Column('user_type', sa.Enum('author', 'regular', name='usertype'), nullable=False))
 
 
 def downgrade() -> None:
-    op.drop_column('user', 'user_type')
     op.drop_index(op.f('ix_comment_id'), table_name='comment')
     op.drop_table('comment')
     op.drop_index(op.f('ix_post_id'), table_name='post')
