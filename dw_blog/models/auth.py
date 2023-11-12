@@ -2,7 +2,7 @@ from enum import Enum
 
 from sqlmodel import SQLModel
 
-from dw_blog.models.user import UserType
+from dw_blog.models.common import UserType
 
 
 class TokenType(str, Enum):

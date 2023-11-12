@@ -1,13 +1,10 @@
-from typing import Optional, List
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
-from dw_blog.models.post import Post, PostRead
 from dw_blog.db.db import get_session
 from dw_blog.utils.auth import verify_password, create_access_token
 from dw_blog.services.user import UserService
@@ -41,9 +38,6 @@ class AuthService:
             "access_token": token,
             "token_type": TokenType.bearer,
         }
-
-    async def test(self):
-        pass
 
 async def get_auth_service(session: AsyncSession = Depends(get_session)):
     yield AuthService(session)

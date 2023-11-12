@@ -4,7 +4,9 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, status, Query
 
 from dw_blog.models.post import PostCreate, PostRead, PostUpdate, PostDelete
-from dw_blog.services.user import UserService, get_user_service
+from dw_blog.services.post import PostService, get_post_service
+from dw_blog.utils.auth import get_current_user
+from dw_blog.models.auth import AuthUser
 
 router = APIRouter()
 
@@ -16,9 +18,13 @@ router = APIRouter()
 )
 async def add_user(
     request: PostCreate,
-    example_service: UserService = Depends(get_user_service),
+    post_service: PostService = Depends(get_post_service),
+    current_user: AuthUser = Depends(get_current_user),
 ):
-    return await example_service.create(**request.dict())
+    return await post_service.create(
+        current_user=current_user,
+        **request.dict()
+    )
 
 
 # @router.get(

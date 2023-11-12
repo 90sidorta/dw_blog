@@ -9,30 +9,36 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from dw_blog.db.db import get_session
 from dw_blog.models.post import Post, PostRead
 from dw_blog.db.db import get_session
-from dw_blog.utils.auth import get_password_hash
+from dw_blog.utils.auth import check_if_author
+from dw_blog.models.auth import AuthUser
+from dw_blog.services.user import UserService
 
 
 class PostService:
     def __init__(self, db_session: Session):
         self.db_session = db_session
+        self.user_service = UserService(db_session)
 
     async def create(
         self,
+        current_user: AuthUser,
         text: str,
     ) -> PostRead:
+        user = self.user_service.get(user_id=str(current_user["user_id"]))
+        is_author = check_if_author(user.user_type)
         try:
             post = Post(
                 text=text,
                 date_created=datetime.now(),
                 date_modified=datetime.now(),
+                published=is_author,
             )
-            self.db_session.add(user)
+            self.db_session.add(post)
             await self.db_session.commit()
-            await self.db_session.refresh(user)
-        except Exception as exc:
-            print(123, str(exc))
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to add user!")
-        return user
+            await self.db_session.refresh(post)
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to add post!")
+        return post
 
     # async def get(
     #     self,

@@ -6,7 +6,8 @@ from sqlmodel import Session, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
-from dw_blog.models.user import User, UserType, UserRead
+from dw_blog.models.user import User, UserRead
+from dw_blog.models.common import UserType
 from dw_blog.models.auth import AuthUser
 from dw_blog.db.db import get_session
 from dw_blog.utils.auth import get_password_hash, check_user

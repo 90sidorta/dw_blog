@@ -6,7 +6,7 @@ from jose import jwt, JWTError
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 
-from dw_blog.models.user import UserType
+from dw_blog.models.common import UserType
 from dw_blog.config import Settings
 
 settings = Settings()
@@ -61,9 +61,19 @@ def get_current_user(token: str = Depends(auth_schema)):
         raise exception
 
 
-def check_user(user_id: str, current_user_id: str, user_type: UserType):
+def check_user(
+    user_id: str,
+    current_user_id: str,
+    user_type: UserType
+):
     if str(user_id) != str(current_user_id) and user_type != UserType.author:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can not update other users data!",
         )
+
+
+async def check_if_author(
+    user_type: UserType,
+):
+    return user_type == UserType.author

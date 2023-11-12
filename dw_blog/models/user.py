@@ -1,13 +1,9 @@
 import uuid
-from enum import Enum
 from typing import Optional
 
 from sqlmodel import SQLModel, Field
 
-
-class UserType(str, Enum):
-    author = "author"
-    regular = "regular"
+from dw_blog.models.common import UserType
 
 
 class UserBase(SQLModel):

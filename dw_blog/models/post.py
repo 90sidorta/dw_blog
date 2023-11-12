@@ -15,6 +15,7 @@ class PostBase(SQLModel):
     date_modified: datetime = Field(default_factory=datetime.utcnow)
     author_id: uuid.UUID = Field(nullable=False)
     author_nickname: str = Field(nullable=False)
+    published: bool = Field(nullable=False, default_factory=False)
 
 
 class Post(PostBase, table=True):
