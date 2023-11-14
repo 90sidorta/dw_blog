@@ -1,9 +1,10 @@
 import uuid
-from typing import Optional
+from typing import Optional, List
 
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 
 from dw_blog.models.common import UserType
+from dw_blog.models.blog import BlogAuthors, Blog
 
 
 class UserBase(SQLModel):
@@ -37,6 +38,10 @@ class User(UserBase, table=True):
         default_factory=uuid.uuid4,
         primary_key=True,
         index=True
+    )
+    blogs: Optional[List[Blog]] = Relationship(
+        back_populates="authors",
+        link_model=BlogAuthors,
     )
 
 

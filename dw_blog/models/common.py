@@ -2,5 +2,5 @@ from enum import Enum
 
 
 class UserType(str, Enum):
-    author = "author"
+    admin = "admin"
     regular = "regular"

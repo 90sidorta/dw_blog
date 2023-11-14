@@ -66,14 +66,14 @@ def check_user(
     current_user_id: str,
     user_type: UserType
 ):
-    if str(user_id) != str(current_user_id) and user_type != UserType.author:
+    if str(user_id) != str(current_user_id) and user_type != UserType.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can not update other users data!",
         )
 
 
-def check_if_author(
+def check_if_admin(
     user_type: UserType,
 ):
-    return user_type == UserType.author
+    return user_type == UserType.admin

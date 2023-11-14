@@ -9,7 +9,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from dw_blog.db.db import get_session
 from dw_blog.models.post import Post, PostRead
 from dw_blog.db.db import get_session
-from dw_blog.utils.auth import check_if_author
+from dw_blog.utils.auth import check_if_admin
 from dw_blog.models.auth import AuthUser
 from dw_blog.services.user import UserService
 
@@ -27,7 +27,7 @@ class PostService:
         user = await self.user_service.get(
             user_id=str(current_user["user_id"])
         )
-        is_author = check_if_author(user.user_type)
+        is_author = check_if_admin(user.user_type)
 
         try:
             post = Post(

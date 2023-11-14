@@ -15,6 +15,7 @@ class PostBase(SQLModel):
     )
     date_created: datetime = Field(default_factory=datetime.utcnow)
     date_modified: datetime = Field(default_factory=datetime.utcnow)
+    blog_id: uuid.UUID = Field(nullable=False)
     author_id: uuid.UUID = Field(nullable=False)
     author_nickname: str = Field(nullable=False)
     published: bool = Field(nullable=False, default_factory=False)
@@ -27,7 +28,10 @@ class Post(PostBase, table=True):
         index=True
     )
     comments: List["Comment"] = Relationship(back_populates="post")
-    tags: List[Tag] = Relationship(back_populates="posts", link_model=TagPosts)
+    tags: List[Tag] = Relationship(
+        back_populates="posts",
+        link_model=TagPosts,
+    )
 
 
 class PostCreate(SQLModel):

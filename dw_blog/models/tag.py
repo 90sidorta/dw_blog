@@ -4,6 +4,7 @@ from datetime import datetime
 
 from sqlmodel import SQLModel, Field, Relationship
 
+from dw_blog.models.blog import Blog
 
 class TagPosts(SQLModel, table=True):
     tag_id: uuid.UUID = Field(foreign_key="tag.id", primary_key=True)
@@ -26,7 +27,15 @@ class Tag(TagBase, table=True):
         primary_key=True,
         index=True
     )
-    posts: List["Post"] = Relationship(back_populates="tags", link_model=TagPosts)
+    posts: List["Post"] = Relationship(
+        back_populates="tags",
+        link_model=TagPosts,
+    )
+    blog_id: uuid.UUID = Field(
+        default=None,
+        foreign_key="blog.id",
+    )
+    blog: Blog = Relationship(back_populates="tags")
 
 
 class TagCreate(SQLModel):
