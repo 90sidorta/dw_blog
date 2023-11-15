@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import List, Dict
 from datetime import datetime
 
 from sqlmodel import SQLModel, Field, Relationship
@@ -31,3 +31,24 @@ class Blog(BlogBase, table=True):
         link_model=BlogAuthors,
     )
     tags: List["Tag"] = Relationship(back_populates="blog")
+
+
+class BlogCreate(SQLModel):
+    name: str = Field(
+        min_length=3,
+        max_length=500,
+        nullable=False,
+    )
+
+
+class BlogAuthor(SQLModel):
+    author_id: uuid.UUID
+    nickname: str
+
+
+class BlogRead(SQLModel):
+    id: uuid.UUID
+    name: str
+    date_created: datetime
+    date_modified: datetime
+    authors: List[BlogAuthor]

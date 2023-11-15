@@ -5,6 +5,7 @@ from dw_blog.routers.example import router as example_router
 from dw_blog.routers.user import router as user_router
 from dw_blog.routers.auth import router as auth_router
 from dw_blog.routers.post import router as post_router
+from dw_blog.routers.blog import router as blog_router
 
 app = FastAPI()
 
@@ -27,6 +28,11 @@ app.include_router(
     post_router,
     tags=["posts"],
     prefix="/posts"
+)
+app.include_router(
+    blog_router,
+    tags=["blogs"],
+    prefix="/blogs"
 )
 
 @app.on_event("startup")
