@@ -8,7 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from dw_blog.db.db import get_session
-from dw_blog.models.blog import BlogBase, BlogRead, Blog, BlogAuthors
+from dw_blog.models.blog import BlogBase, BlogRead, Blog, BlogAuthors, BlogAuthor
 from dw_blog.db.db import get_session
 from dw_blog.utils.auth import check_if_admin
 from dw_blog.models.auth import AuthUser
@@ -56,13 +56,14 @@ class BlogService:
                 detail="Failed to add blog!",
             )
 
-        return blog
+        blog_read = await self.get(blog_id=blog.id)
+
+        return blog_read
 
     async def get(
         self,
         blog_id: UUID,
-    ):
-        # Tutaj trzeba zrobić tak żeby zwracało jeden blog, ale dwóch autorów
+    ) -> BlogRead:
         q = (
             select(
                 Blog.id,
@@ -77,17 +78,68 @@ class BlogService:
             .where(Blog.id == blog_id)
         )
         result = await self.db_session.exec(q)
-        blog = result.first()
+        blogs = result.all()
 
-        if blog is None:
+        if len(blogs) == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Blog not found!"
             )
         
-        print(213, blog)
+        authors = []
+        for blog in blogs:
+            authors.append(
+                BlogAuthor(
+                    author_id=blog.author_id,
+                    nickname=blog.author_nickname,
+                )
+            )
+
+        blog_read = BlogRead(
+            id=blog.id,
+            name=blog.name,
+            date_created=blog.date_created,
+            date_modified=blog.date_modified,
+            authors=authors
+        )
         
-        return blog
+        return blog_read
+
+    async def list(
+        self,
+        author_name: Optional[str] = None,
+        blog_name: Optional[str] = None,
+    ):
+        if blog_name:
+            q = select(Blog).where(Blog.name.ilike(f"%{blog_name}%"))
+            result = await self.db_session.exec(q)
+            blogs = result.fetchall()
+        
+        if author_name:
+            users = await self.user_service.list(nickname=author_name)
+            blogs = []
+            for user in users:
+                user_blogs_results = await self.db_session.exec(
+                    select(Blog)
+                    .join(BlogAuthors, onclause=Blog.id == BlogAuthors.blog_id, isouter=True)
+                    .where(BlogAuthors.author_id == user.id)
+                )
+                user_blogs = user_blogs_results.fetchall()
+                for user_blog in user_blogs:
+                    blogs.append(user_blog)
+
+        if len(blogs) == 0:
+            raise HTTPException(
+                detail="No blogs found!",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        return_blogs = []
+        for blog in blogs:
+            print("blog", blog)
+            return_blogs.append(await self.get(blog_id=blog.id))
+        
+        return return_blogs
 
 async def get_blog_service(session: AsyncSession = Depends(get_session)):
     yield BlogService(session)

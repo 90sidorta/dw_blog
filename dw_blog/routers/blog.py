@@ -29,7 +29,7 @@ async def add_blog(
 
 @router.get(
     "/{blog_id}",
-    # response_model=BlogRead,
+    response_model=BlogRead,
     status_code=status.HTTP_200_OK,
 )
 async def get_blog(
@@ -37,3 +37,19 @@ async def get_blog(
     blog_service: BlogService = Depends(get_blog_service),
 ):
     return await blog_service.get(blog_id=blog_id)
+
+
+@router.get(
+    "",
+    response_model=List[BlogRead],
+    status_code=status.HTTP_200_OK,
+)
+async def list_blogs(
+    author_name: Optional[str] = None,
+    blog_name: Optional[str] = None, 
+    blog_service: BlogService = Depends(get_blog_service),
+):
+    return await blog_service.list(
+        author_name=author_name,
+        blog_name=blog_name,
+    )

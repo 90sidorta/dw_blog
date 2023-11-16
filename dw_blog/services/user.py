@@ -69,9 +69,9 @@ class UserService:
     
     async def list(
         self,
-        users_ids: Optional[List[UUID]],
-        nickname: Optional[str],
-        user_type: Optional[UserType],
+        users_ids: Optional[List[UUID]] = None,
+        nickname: Optional[str] = None,
+        user_type: Optional[UserType] = None,
     ) -> List[UserRead]:
         q = select(User)
         if users_ids:
