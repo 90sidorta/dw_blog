@@ -12,7 +12,7 @@ from dw_blog.models.blog import BlogBase, BlogRead, Blog, BlogAuthors, BlogAutho
 from dw_blog.db.db import get_session
 from dw_blog.utils.auth import check_if_admin
 from dw_blog.models.auth import AuthUser
-from dw_blog.models.user import User
+from dw_blog.models.user import User, UserType
 from dw_blog.services.user import UserService
 
 
@@ -140,6 +140,68 @@ class BlogService:
             return_blogs.append(await self.get(blog_id=blog.id))
         
         return return_blogs
+
+    async def check_blog(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+    ):
+        # Check if blog exists
+        blog = await self.get(blog_id=blog_id)
+        # Chek user permissions
+        authors_ids = []
+        for author in blog.authors:
+            authors_ids.append(author.author_id)
+        if current_user["user_id"] not in authors_ids and current_user["user_type"] != UserType.admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Can't update other user blog!",
+            )
+
+    async def update(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+        name: str,
+    ):
+        await self.check_blog(
+            blog_id=blog_id,
+            current_user=current_user,
+        )
+        # Update blog
+        update_blog = await self.db_session.get(Blog, blog_id)
+        if name:
+            update_blog.name = name
+        try:
+            self.db_session.add(update_blog)
+            await self.db_session.commit()
+        except Exception as exc:
+            print(str(exc))
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to update blog!",
+            )
+        return await self.get(blog_id=blog_id)
+
+    async def delete(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+    ):
+        await self.check_blog(
+            blog_id=blog_id,
+            current_user=current_user,
+        )
+        # Delete blog
+        delete_blog = await self.db_session.get(Blog, blog_id)
+        try:
+            self.db_session.delete(delete_blog)
+            self.db_session.commit()
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Failed to delete blog!",
+            )
 
 async def get_blog_service(session: AsyncSession = Depends(get_session)):
     yield BlogService(session)

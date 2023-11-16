@@ -41,6 +41,10 @@ class BlogCreate(SQLModel):
     )
 
 
+class BlogUpdate(BlogCreate):
+    pass
+
+
 class BlogAuthor(SQLModel):
     author_id: uuid.UUID
     nickname: str

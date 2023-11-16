@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Depends, status, Query
 
-from dw_blog.models.blog import BlogCreate, BlogRead
+from dw_blog.models.blog import BlogCreate, BlogRead, BlogUpdate
 from dw_blog.services.blog import BlogService, get_blog_service
 from dw_blog.utils.auth import get_current_user
 from dw_blog.models.auth import AuthUser
@@ -53,3 +53,37 @@ async def list_blogs(
         author_name=author_name,
         blog_name=blog_name,
     )
+
+
+@router.patch(
+    "/{blog_id}",
+    response_model=BlogRead,
+    status_code=status.HTTP_200_OK,
+)
+async def update_blog(
+    blog_id: UUID,
+    request: BlogUpdate,
+    current_user: AuthUser = Depends(get_current_user),
+    blog_service: BlogService = Depends(get_blog_service),
+):
+    return await blog_service.update(
+        blog_id=blog_id,
+        current_user=current_user,
+        **request.dict(),
+    )
+
+
+@router.delete(
+    "/{blog_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_blog(
+    blog_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    blog_service: BlogService = Depends(get_blog_service),
+):
+    await blog_service.delete(
+        blog_id=blog_id,
+        current_user=current_user,
+    )
+    return
