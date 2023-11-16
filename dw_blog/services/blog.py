@@ -3,14 +3,12 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session, select, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from dw_blog.db.db import get_session
-from dw_blog.models.blog import BlogBase, BlogRead, Blog, BlogAuthors, BlogAuthor
+from dw_blog.models.blog import BlogRead, Blog, BlogAuthors, BlogAuthor
 from dw_blog.db.db import get_session
-from dw_blog.utils.auth import check_if_admin
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.user import User, UserType
 from dw_blog.services.user import UserService
@@ -109,7 +107,7 @@ class BlogService:
         self,
         author_name: Optional[str] = None,
         blog_name: Optional[str] = None,
-    ):
+    ) -> List[BlogRead]:
         if blog_name:
             q = select(Blog).where(Blog.name.ilike(f"%{blog_name}%"))
             result = await self.db_session.exec(q)
@@ -163,12 +161,13 @@ class BlogService:
         blog_id: UUID,
         current_user: AuthUser,
         name: str,
-    ):
+    ) -> BlogRead:
         await self.check_blog(
             blog_id=blog_id,
             current_user=current_user,
         )
-        # Update blog
+
+        # Update blog name
         update_blog = await self.db_session.get(Blog, blog_id)
         if name:
             update_blog.name = name
@@ -181,7 +180,80 @@ class BlogService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Failed to update blog!",
             )
+
         return await self.get(blog_id=blog_id)
+
+    async def add_author_to_blog(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+        add_author_ids: List[UUID],
+    ) -> BlogRead:
+        await self.check_blog(
+            blog_id=blog_id,
+            current_user=current_user,
+        )
+        # Add authors to blog
+        q = select(BlogAuthors).where(BlogAuthors.blog_id == blog_id)
+        blog_authors_result = self.db_session.exec(q)
+        blog_authors = blog_authors_result.fetchall()
+
+        if len(blog_authors) > 5 or (len(blog_authors) + len(add_author_ids) > 5):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Blog can only have 5 authors!",
+            )
+        
+        # Dopisać sprawdzenie czy author_id już nie jest wśród autorów tego bloga
+        for author_id in add_author_ids:
+            try:
+                blog_author = BlogAuthors(
+                    blog_id=blog_id,
+                    author_id=author_id,
+                )
+                self.db_session.add(blog_author)
+                await self.db_session.commit()
+                await self.db_session.refresh(blog_author)
+            except Exception:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Failed to add author to blog!",
+                )
+
+        blog_read = await self.get(blog_id=blog_id)
+        return blog_read
+
+    async def remove_author_from_blog(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+        remove_author_id: UUID,
+    ) -> BlogRead:
+        await self.check_blog(
+            blog_id=blog_id,
+            current_user=current_user,
+        )
+        # Check count of authors
+        blog = await self.get(blog_id=blog_id)
+        if len(blog.authors) == 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Can't delete the only author!",
+            )
+        # Remove author from the blog
+        q = delete(BlogAuthors).where(
+            (BlogAuthors.author_id == remove_author_id),
+            (BlogAuthors.blog_id == blog_id),
+        )
+        try:
+            self.db_session.exec(q)
+            self.db_session.commit()
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Failed to delete author!",
+            )
+        return await self.get(blog_id=blog_id) 
 
     async def delete(
         self,

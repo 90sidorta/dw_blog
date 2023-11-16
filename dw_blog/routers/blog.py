@@ -55,6 +55,42 @@ async def list_blogs(
     )
 
 
+@router.post(
+    "/{blog_id}/add_authors",
+    response_model=BlogRead,
+    status_code=status.HTTP_200_OK,
+)
+async def add_blog_authors(
+    blog_id: UUID,
+    add_author_ids: List[UUID],
+    current_user: AuthUser = Depends(get_current_user),
+    blog_service: BlogService = Depends(get_blog_service),
+):
+    return await blog_service.add_author_to_blog(
+        blog_id=blog_id,
+        current_user=current_user,
+        add_author_ids=add_author_ids,
+    )
+
+
+@router.post(
+    "/{blog_id}/remove_author",
+    response_model=BlogRead,
+    status_code=status.HTTP_200_OK,
+)
+async def remove_blog_authors(
+    blog_id: UUID,
+    remove_author_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    blog_service: BlogService = Depends(get_blog_service),
+):
+    return await blog_service.remove_author_from_blog(
+        blog_id=blog_id,
+        current_user=current_user,
+        remove_author_id=remove_author_id,
+    )
+
+
 @router.patch(
     "/{blog_id}",
     response_model=BlogRead,
