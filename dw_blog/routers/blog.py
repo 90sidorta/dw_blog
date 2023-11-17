@@ -1,8 +1,9 @@
 from uuid import UUID
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, status
 
+from dw_blog.models.common import ErrorModel
 from dw_blog.models.blog import BlogCreate, BlogRead, BlogUpdate
 from dw_blog.services.blog import BlogService, get_blog_service
 from dw_blog.utils.auth import get_current_user
@@ -15,6 +16,13 @@ router = APIRouter()
     "",
     response_model=BlogRead,
     status_code=status.HTTP_201_CREATED,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+    },
+    summary="Create new blog",
+    description="Create new blog with creating user as an author.",
 )
 async def add_blog(
     request: BlogCreate,
@@ -31,6 +39,13 @@ async def add_blog(
     "/{blog_id}",
     response_model=BlogRead,
     status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+    },
+    summary="Get single blog",
+    description="Get single blog data with author information.",
 )
 async def get_blog(
     blog_id: UUID,
@@ -43,12 +58,21 @@ async def get_blog(
     "",
     response_model=List[BlogRead],
     status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+    },
+    summary="Get list of blogs",
+    description="""Get list of blogs with authors information.
+    Blogs can be searched on the basis of authors names and blog name.
+    """,
 )
 async def list_blogs(
     author_name: Optional[str] = None,
     blog_name: Optional[str] = None, 
     blog_service: BlogService = Depends(get_blog_service),
 ):
+    # TODO - add pagination
     return await blog_service.list(
         author_name=author_name,
         blog_name=blog_name,

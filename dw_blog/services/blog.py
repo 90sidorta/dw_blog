@@ -12,6 +12,7 @@ from dw_blog.db.db import get_session
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.user import User, UserType
 from dw_blog.services.user import UserService
+from dw_blog.exceptions.blog import BlogLimitReached, FailedBlogAdd, BlogNotFound
 
 
 class BlogService:
@@ -24,20 +25,27 @@ class BlogService:
         current_user: AuthUser,
         name: str,
     ) -> BlogRead:
+        """This function creates new blog for authenticated user.
+        Args:
+            current_user (AuthUser): data of authenticated user.
+            name (str): blog name
+        Raises:
+            BlogLimitReached: raised if user already has 3 blogs
+            FailedBlogAdd: raised if blog addition failed
+        Returns:
+            BlogRead: Created blog with author data
+        """
+        # Check if user has less than 3 blogs
         user = await self.user_service.get(
             user_id=str(current_user["user_id"])
         )
-
-        # Check if user has less than 3 blogs
         q = select(BlogAuthors).where(BlogAuthors.author_id == user.id)
         result = await self.db_session.exec(q)
         user_blogs = result.fetchall()
         if len(user_blogs) >= 3:
-            raise HTTPException(
-                detail="User already has 3 blogs!",
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
+            raise BlogLimitReached()
 
+        # Try to add new blog
         try:
             blog = Blog(
                 name=name,
@@ -49,19 +57,25 @@ class BlogService:
             await self.db_session.commit()
             await self.db_session.refresh(blog)
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to add blog!",
-            )
+            raise FailedBlogAdd()
 
+        # Return created blog
         blog_read = await self.get(blog_id=blog.id)
-
         return blog_read
 
     async def get(
         self,
         blog_id: UUID,
     ) -> BlogRead:
+        """Get blog data from database
+        Args:
+            blog_id (UUID): id of blog to be read
+        Raises:
+            BlogNotFound: raised if blog does not exist
+        Returns:
+            BlogRead: Read blog with author data
+        """
+        # Construct query with joined authors data
         q = (
             select(
                 Blog.id,
@@ -78,12 +92,11 @@ class BlogService:
         result = await self.db_session.exec(q)
         blogs = result.all()
 
+        # If no blog was found raise an exception
         if len(blogs) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Blog not found!"
-            )
+            raise BlogNotFound()
         
+        # Fetch data for authors field
         authors = []
         for blog in blogs:
             authors.append(
@@ -93,6 +106,7 @@ class BlogService:
                 )
             )
 
+        # Prepare and send response
         blog_read = BlogRead(
             id=blog.id,
             name=blog.name,
@@ -100,7 +114,6 @@ class BlogService:
             date_modified=blog.date_modified,
             authors=authors
         )
-        
         return blog_read
 
     async def list(
@@ -108,14 +121,30 @@ class BlogService:
         author_name: Optional[str] = None,
         blog_name: Optional[str] = None,
     ) -> List[BlogRead]:
+        """Get listed blogs based - either all or based on authors_name or blog_name
+        Args:
+            author_name (Optional[str], optional): Name of author of the blog. Defaults to None.
+            blog_name (Optional[str], optional): Name of the blog. Defaults to None.
+        Raises:
+            BlogNotFound: raised if no blog matching criteria exists
+        Returns:
+            List[BlogRead]: List of blogs matching users criteria
+        """
+        # Get all blogs if no author_name and no blog_name were provided
+        if not blog_name and not author_name:
+            blogs_result = await self.db_session.exec(select(Blog))
+            blogs = blogs_result.fetchall()
+        # Get blogs if user searches them on the basis of blog name
         if blog_name:
             q = select(Blog).where(Blog.name.ilike(f"%{blog_name}%"))
-            result = await self.db_session.exec(q)
-            blogs = result.fetchall()
+            blogs_name_result = await self.db_session.exec(q)
+            blogs = blogs_name_result.fetchall()
         
+        # Get blogs if user searches them on the basis of authors name
         if author_name:
             users = await self.user_service.list(nickname=author_name)
             blogs = []
+
             for user in users:
                 user_blogs_results = await self.db_session.exec(
                     select(Blog)
@@ -123,18 +152,17 @@ class BlogService:
                     .where(BlogAuthors.author_id == user.id)
                 )
                 user_blogs = user_blogs_results.fetchall()
+                
                 for user_blog in user_blogs:
                     blogs.append(user_blog)
 
+        # Raise exception if no blogs were found
         if len(blogs) == 0:
-            raise HTTPException(
-                detail="No blogs found!",
-                status_code=status.HTTP_404_NOT_FOUND,
-            )
+            raise BlogNotFound()
 
+        # Prepare read blog response
         return_blogs = []
         for blog in blogs:
-            print("blog", blog)
             return_blogs.append(await self.get(blog_id=blog.id))
         
         return return_blogs
@@ -193,7 +221,7 @@ class BlogService:
             blog_id=blog_id,
             current_user=current_user,
         )
-        # Add authors to blog
+        # Check if blog already reached limit of five authors
         q = select(BlogAuthors).where(BlogAuthors.blog_id == blog_id)
         blog_authors_result = self.db_session.exec(q)
         blog_authors = blog_authors_result.fetchall()
@@ -204,21 +232,31 @@ class BlogService:
                 detail="Blog can only have 5 authors!",
             )
         
-        # Dopisać sprawdzenie czy author_id już nie jest wśród autorów tego bloga
         for author_id in add_author_ids:
-            try:
-                blog_author = BlogAuthors(
-                    blog_id=blog_id,
-                    author_id=author_id,
+            # Check if user is already author and if yes, pass this id
+            author_already_result = self.db_session.exec(
+                select(BlogAuthors)
+                .where(
+                    BlogAuthors.blog_id == blog_id,
+                    BlogAuthors.author_id == author_id,
                 )
-                self.db_session.add(blog_author)
-                await self.db_session.commit()
-                await self.db_session.refresh(blog_author)
-            except Exception:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Failed to add author to blog!",
-                )
+            )
+            author_already = author_already_result.first()
+            # If user is not already an author, add him/her
+            if not author_already:
+                try:
+                    blog_author = BlogAuthors(
+                        blog_id=blog_id,
+                        author_id=author_id,
+                    )
+                    self.db_session.add(blog_author)
+                    await self.db_session.commit()
+                    await self.db_session.refresh(blog_author)
+                except Exception:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Failed to add author to blog!",
+                    )
 
         blog_read = await self.get(blog_id=blog_id)
         return blog_read
