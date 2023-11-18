@@ -32,6 +32,10 @@ class RouteErrorHandler(APIRoute):
                 if isinstance(exc, HTTPException):
                     status_code = exc.status_code
                     detail = exc.detail
+                    return JSONResponse(
+                        status_code=status_code,
+                        content={"detail": f"{detail[0]}"},
+                    )
                 elif isinstance(exc, ListException):
                     return JSONResponse(
                         status_code=422,
@@ -43,23 +47,14 @@ class RouteErrorHandler(APIRoute):
                             for e in exc.detail]
                         },
                     )
-                elif isinstance(exc, RequestValidationError) and exc.errors():
-                    return JSONResponse(
-                        status_code=422,
-                        content={
-                            "validation_errors": [
-                                {
-                                    "detail": error["msg"],
-                                    "field_template_id": None,
-                                }
-                                for error in exc.errors()
-                            ]
-                        }
-                    )
                 elif isinstance(exc, RequestValidationError):
-                    error_msg = parse_pydantic_msg(exc.errors())
+                    error_msg, error_loc = parse_pydantic_msg(exc.errors())
                     status_code = 422
                     detail = f"Validation error: {error_msg}!"
+                    return JSONResponse(
+                        status_code=status_code,
+                        content={"detail": f"{detail}", "location": error_loc},
+                    )
                 elif isinstance(exc, ValidationError):
                     error_msg = parse_pydantic_msg(exc.errors())
                     status_code = 422

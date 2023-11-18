@@ -91,10 +91,8 @@ async def list_blogs(
         401: {"model": ErrorModel},
         404: {"model": ErrorModel},
     },
-    summary="Get list of blogs",
-    description="""Add users as authors.
-    Add upt to five users to a blog as authors.
-    """,
+    summary="Add users as authors",
+    description="Add upt to five users to a blog as authors.",
 )
 async def add_blog_authors(
     blog_id: UUID,
