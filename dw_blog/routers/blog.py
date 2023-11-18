@@ -83,6 +83,14 @@ async def list_blogs(
     "/{blog_id}/add_authors",
     response_model=BlogRead,
     status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+    },
+    summary="Get list of blogs",
+    description="""Get list of blogs with authors information.
+    Blogs can be searched on the basis of authors names and blog name.
+    """,
 )
 async def add_blog_authors(
     blog_id: UUID,
