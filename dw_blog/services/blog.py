@@ -247,7 +247,7 @@ class BlogService:
             Union[BlogAuthors, None]: either result from Blog
             Authors table or None
         """
-        author_already_result = self.db_session.exec(
+        author_already_result = await self.db_session.exec(
             select(BlogAuthors)
             .where(
                 BlogAuthors.blog_id == blog_id,
@@ -280,7 +280,7 @@ class BlogService:
         )
         # Check if blog already reached limit of five authors
         q = select(BlogAuthors).where(BlogAuthors.blog_id == blog_id)
-        blog_authors_result = self.db_session.exec(q)
+        blog_authors_result = await self.db_session.exec(q)
         blog_authors = blog_authors_result.fetchall()
 
         if len(blog_authors) > 5 or \
@@ -291,7 +291,7 @@ class BlogService:
         already_authors = []
         add_authors = []
         for author_id in add_author_ids:
-            author_already = self.is_author_already(
+            author_already = await self.is_author_already(
                 blog_id=blog_id,
                 author_id=author_id
             )

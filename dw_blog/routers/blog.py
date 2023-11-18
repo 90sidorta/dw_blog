@@ -8,8 +8,9 @@ from dw_blog.models.blog import BlogCreate, BlogRead, BlogUpdate
 from dw_blog.services.blog import BlogService, get_blog_service
 from dw_blog.utils.auth import get_current_user
 from dw_blog.models.auth import AuthUser
+from errors import RouteErrorHandler
 
-router = APIRouter()
+router = APIRouter(route_class=RouteErrorHandler)
 
 
 @router.post(
@@ -43,6 +44,7 @@ async def add_blog(
         400: {"model": ErrorModel},
         401: {"model": ErrorModel},
         403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
     },
     summary="Get single blog",
     description="Get single blog data with author information.",
@@ -61,6 +63,7 @@ async def get_blog(
     responses={
         400: {"model": ErrorModel},
         401: {"model": ErrorModel},
+        404: {"model": ErrorModel},
     },
     summary="Get list of blogs",
     description="""Get list of blogs with authors information.
@@ -86,10 +89,11 @@ async def list_blogs(
     responses={
         400: {"model": ErrorModel},
         401: {"model": ErrorModel},
+        404: {"model": ErrorModel},
     },
     summary="Get list of blogs",
-    description="""Get list of blogs with authors information.
-    Blogs can be searched on the basis of authors names and blog name.
+    description="""Add users as authors.
+    Add upt to five users to a blog as authors.
     """,
 )
 async def add_blog_authors(
