@@ -72,13 +72,14 @@ async def get_blog(
     """,
 )
 async def list_blogs(
-    author_name: Optional[str] = None,
-    blog_name: Optional[str] = None, 
+    limit: int = 10,
+    offset: int = 0,
+    blog_name: Optional[str] = None,
     blog_service: BlogService = Depends(get_blog_service),
 ):
-    # TODO - add pagination
     return await blog_service.list(
-        author_name=author_name,
+        limit=limit,
+        offset=offset,
         blog_name=blog_name,
     )
 

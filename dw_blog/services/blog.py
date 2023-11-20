@@ -2,13 +2,14 @@ from typing import Optional, List, Union
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from sqlmodel import Session, select, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
 from dw_blog.models.blog import (
-    BlogRead, Blog,
+    BlogRead,
+    Blog,
     BlogAuthors,
     BlogAuthor,
 )
@@ -16,7 +17,7 @@ from dw_blog.db.db import get_session
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.user import User, UserType
 from dw_blog.services.user import UserService
-from dw_blog.exceptions.common import ListException
+from dw_blog.exceptions.common import ListException, PaginationLimitSurpassed
 from dw_blog.exceptions.blog import (
     BlogLimitReached,
     BlogFailedAdd,
@@ -135,52 +136,36 @@ class BlogService:
 
     async def list(
         self,
+        limit: int,
+        offset: int,
         author_name: Optional[str] = None,
         blog_name: Optional[str] = None,
     ) -> List[BlogRead]:
         """Get listed blogs based - either all or based on authors_name or blog_name
         Args:
-            author_name (Optional[str], optional): Name of author of the blog. Defaults to None.
+            limit [int]: up to how many results per page
+            offset [int]: how many records should be skipped
             blog_name (Optional[str], optional): Name of the blog. Defaults to None.
         Raises:
             BlogNotFound: raised if no blog matching criteria exists
+            PaginationLimitSurpassed: raised if limit was suprassed
         Returns:
             List[BlogRead]: List of blogs matching users criteria
         """
-        # Get all blogs if no author_name and no blog_name were provided
-        if not blog_name and not author_name:
-            blogs_result = await self.db_session.exec(select(Blog))
-            blogs = blogs_result.fetchall()
+        # Check limit
+        if limit > 20:
+            raise PaginationLimitSurpassed()
+
+        # Create query
+        q = select(Blog)
         # Get blogs if user searches them on the basis of blog name
         if blog_name:
-            q = select(Blog).where(Blog.name.ilike(f"%{blog_name}%"))
-            blogs_name_result = await self.db_session.exec(q)
-            blogs = blogs_name_result.fetchall()
-        
-        # Get blogs if user searches them on the basis of authors name
-        if author_name:
-            users = await self.user_service.list(nickname=author_name)
-            blogs = []
-
-            for user in users:
-                user_q = (
-                    select(Blog)
-                    .join(
-                        BlogAuthors,
-                        onclause=Blog.id == BlogAuthors.blog_id,
-                        isouter=True,
-                    )
-                    .where(BlogAuthors.author_id == user.id)
-                )
-                user_blogs_results = await self.db_session.exec(user_q)
-                user_blogs = user_blogs_results.fetchall()
-                
-                for user_blog in user_blogs:
-                    blogs.append(user_blog)
-
-        # Raise exception if no blogs were found
-        if len(blogs) == 0:
-            raise BlogNotFound()
+            q = q.where(Blog.name.ilike(f"%{blog_name}%"))
+        # Add pagination to query
+        q = q.limit(limit).offset(offset)
+        # Execute query
+        blogs_result = await self.db_session.exec(q)
+        blogs = blogs_result.fetchall()
 
         # Prepare read blog response
         return_blogs = []
