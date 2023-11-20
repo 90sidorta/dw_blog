@@ -12,7 +12,7 @@ class BlogLimitReached(HTTPException):
         )
 
 
-class FailedBlogAdd(HTTPException):
+class BlogFailedAdd(HTTPException):
     def __init__(self):
         detail="Failed to add blog!",
         super().__init__(
@@ -30,7 +30,7 @@ class BlogNotFound(HTTPException):
         )
 
 
-class AuthorsLimitReached(HTTPException):
+class BlogAuthorsLimitReached(HTTPException):
     def __init__(self):
         detail="Blog can only have 5 authors!",
         super().__init__(
@@ -39,7 +39,7 @@ class AuthorsLimitReached(HTTPException):
         )
 
 
-class AuthorsAddFail(HTTPException):
+class BlogAuthorsAddFail(HTTPException):
     def __init__(self):
         detail="Failed to add authors to the blog!",
         super().__init__(
@@ -48,7 +48,7 @@ class AuthorsAddFail(HTTPException):
         )
         
 
-class UserAlreadyAuthor(HTTPException):
+class BlogAlreadyAuthor(HTTPException):
     def __init__(self, author_id: UUID):
         detail=f"User {author_id} is already an author!",
         super().__init__(
@@ -57,10 +57,46 @@ class UserAlreadyAuthor(HTTPException):
         )
 
 
-class NotYourBlog(HTTPException):
+class BlogNotYours(HTTPException):
     def __init__(self, blog_id: UUID):
         detail=f"Blog {blog_id} does not belong to you!",
         super().__init__(
              status_code=status.HTTP_403_FORBIDDEN,
+             detail=detail,
+        )
+
+
+class BlogLastAuthor(HTTPException):
+    def __init__(self):
+        detail="Can't delete the only author!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
+
+
+class BlogDeleteAuthorFail(HTTPException):
+    def __init__(self):
+        detail="Can't delete the only author!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
+
+
+class BlogUpdateFail(HTTPException):
+    def __init__(self):
+        detail="Failed to update blog!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
+
+
+class BlogDeleteFail(HTTPException):
+    def __init__(self):
+        detail="Failed to delete blog!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
              detail=detail,
         )

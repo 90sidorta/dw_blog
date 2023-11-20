@@ -19,12 +19,16 @@ from dw_blog.services.user import UserService
 from dw_blog.exceptions.common import ListException
 from dw_blog.exceptions.blog import (
     BlogLimitReached,
-    FailedBlogAdd,
+    BlogFailedAdd,
     BlogNotFound,
-    AuthorsLimitReached,
-    AuthorsAddFail,
-    UserAlreadyAuthor,
-    NotYourBlog,
+    BlogAuthorsLimitReached,
+    BlogAuthorsAddFail,
+    BlogAlreadyAuthor,
+    BlogNotYours,
+    BlogLastAuthor,
+    BlogDeleteAuthorFail,
+    BlogUpdateFail,
+    BlogDeleteFail,
 )
 
 
@@ -70,7 +74,7 @@ class BlogService:
             await self.db_session.commit()
             await self.db_session.refresh(blog)
         except Exception:
-            raise FailedBlogAdd()
+            raise BlogFailedAdd()
 
         # Return created blog
         blog_read = await self.get(blog_id=blog.id)
@@ -205,7 +209,7 @@ class BlogService:
         for author in blog.authors:
             authors_ids.append(author.author_id)
         if current_user["user_id"] not in authors_ids and current_user["user_type"] != UserType.admin:
-            raise NotYourBlog()
+            raise BlogNotYours()
 
     async def update(
         self,
@@ -213,6 +217,16 @@ class BlogService:
         current_user: AuthUser,
         name: str,
     ) -> BlogRead:
+        """Updates blog data
+        Args:
+            blog_id (UUID): id of blog to be updated
+            current_user (AuthUser): current user object
+            name (str): new blog name
+        Raises:
+            BlogUpdateFail: raised if blog update failed
+        Returns:
+            BlogRead: Read blog with author data
+        """
         await self.check_blog(
             blog_id=blog_id,
             current_user=current_user,
@@ -225,12 +239,8 @@ class BlogService:
         try:
             self.db_session.add(update_blog)
             await self.db_session.commit()
-        except Exception as exc:
-            print(str(exc))
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to update blog!",
-            )
+        except Exception:
+            raise BlogUpdateFail()
 
         return await self.get(blog_id=blog_id)
 
@@ -285,7 +295,7 @@ class BlogService:
 
         if len(blog_authors) > 5 or \
             (len(blog_authors) + len(add_author_ids) > 5):
-            raise AuthorsLimitReached()
+            raise BlogAuthorsLimitReached()
         
         # Check if user is already author and if yes, pass this id
         already_authors = []
@@ -297,7 +307,7 @@ class BlogService:
             )
             # If user is not already an author, add him/her
             if author_already:
-                already_authors.append(UserAlreadyAuthor(author_id=author_id))
+                already_authors.append(BlogAlreadyAuthor(author_id=author_id))
             else:
                 add_authors.append(BlogAuthors(blog_id=blog_id, author_id=author_id))
 
@@ -307,7 +317,7 @@ class BlogService:
                 self.db_session.add(blog_author)
             await self.db_session.commit()
         except Exception:
-            raise AuthorsAddFail()
+            raise BlogAuthorsAddFail()
         
         # Raise exception if some users were already blog authors
         if len(already_authors) > 0:
@@ -322,6 +332,20 @@ class BlogService:
         current_user: AuthUser,
         remove_author_id: UUID,
     ) -> BlogRead:
+        """Remove user from blog authors
+        Args:
+            blog_id (UUID): id of user to be removed from
+            authors list
+            current_user (AuthUser): current user object
+            remove_author_id (UUID): user id to be removed
+        Raises:
+            BlogLastAuthor: raised if user to be removed
+            is blogs last author
+            BlogDeleteAuthorFail: raised if blogs author
+            removal failed
+        Returns:
+            BlogRead: blog with authors data
+        """
         await self.check_blog(
             blog_id=blog_id,
             current_user=current_user,
@@ -329,10 +353,8 @@ class BlogService:
         # Check count of authors
         blog = await self.get(blog_id=blog_id)
         if len(blog.authors) == 1:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Can't delete the only author!",
-            )
+            raise BlogLastAuthor()
+
         # Remove author from the blog
         q = delete(BlogAuthors).where(
             (BlogAuthors.author_id == remove_author_id),
@@ -342,10 +364,8 @@ class BlogService:
             self.db_session.exec(q)
             self.db_session.commit()
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Failed to delete author!",
-            )
+            raise BlogDeleteAuthorFail()
+
         return await self.get(blog_id=blog_id) 
 
     async def delete(
@@ -353,20 +373,26 @@ class BlogService:
         blog_id: UUID,
         current_user: AuthUser,
     ):
+        """Deletes blog
+        Args:
+            blog_id (UUID): blog id
+            current_user (AuthUser): current user object
+
+        Raises:
+            BlogDeleteFail: sed if blog delete fails
+        """
         await self.check_blog(
             blog_id=blog_id,
             current_user=current_user,
         )
+
         # Delete blog
         delete_blog = await self.db_session.get(Blog, blog_id)
         try:
             self.db_session.delete(delete_blog)
             self.db_session.commit()
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Failed to delete blog!",
-            )
+            raise BlogDeleteFail()
 
 async def get_blog_service(session: AsyncSession = Depends(get_session)):
     yield BlogService(session)

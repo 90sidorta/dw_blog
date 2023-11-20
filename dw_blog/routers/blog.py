@@ -21,6 +21,7 @@ router = APIRouter(route_class=RouteErrorHandler)
         400: {"model": ErrorModel},
         401: {"model": ErrorModel},
         403: {"model": ErrorModel},
+        422: {"model": ErrorModel},
     },
     summary="Create new blog",
     description="Create new blog with creating user as an author.",
@@ -90,6 +91,7 @@ async def list_blogs(
         400: {"model": ErrorModel},
         401: {"model": ErrorModel},
         404: {"model": ErrorModel},
+        422: {"model": ErrorModel},
     },
     summary="Add users as authors",
     description="Add upt to five users to a blog as authors.",
@@ -111,6 +113,15 @@ async def add_blog_authors(
     "/{blog_id}/remove_author",
     response_model=BlogRead,
     status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
+        422: {"model": ErrorModel},
+    },
+    summary="Remove users as authors",
+    description="Remove authors from a blog (until one is left).",
 )
 async def remove_blog_authors(
     blog_id: UUID,
@@ -129,6 +140,15 @@ async def remove_blog_authors(
     "/{blog_id}",
     response_model=BlogRead,
     status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
+        422: {"model": ErrorModel},
+    },
+    summary="Update blog",
+    description="Allows authors and admin to update blogs name.",
 )
 async def update_blog(
     blog_id: UUID,
@@ -146,6 +166,14 @@ async def update_blog(
 @router.delete(
     "/{blog_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
+    },
+    summary="Delete blog",
+    description="Allows authors and admin to delete blog.",
 )
 async def delete_blog(
     blog_id: UUID,
