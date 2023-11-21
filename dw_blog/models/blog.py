@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Dict
+from typing import List, Optional
 from datetime import datetime
 
 from sqlmodel import SQLModel, Field, Relationship
@@ -50,9 +50,15 @@ class BlogAuthor(SQLModel):
     nickname: str
 
 
+class BlogTag(SQLModel):
+    tag_id: uuid.UUID
+    tag_name: str
+
+
 class BlogRead(SQLModel):
     id: uuid.UUID
     name: str
     date_created: datetime
     date_modified: datetime
     authors: List[BlogAuthor]
+    tags: Optional[List[BlogTag]]

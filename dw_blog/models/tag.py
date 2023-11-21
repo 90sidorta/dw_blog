@@ -39,6 +39,7 @@ class Tag(TagBase, table=True):
 
 
 class TagCreate(SQLModel):
+    blog_id: uuid.UUID
     name: str = Field(
         min_length=3,
         max_length=500,

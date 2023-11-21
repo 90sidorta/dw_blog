@@ -8,43 +8,61 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
 from dw_blog.models.tag import TagRead, Tag
+from dw_blog.exceptions.tag import TagFailedAdd
 from dw_blog.db.db import get_session
 from dw_blog.utils.auth import check_if_admin
 from dw_blog.models.auth import AuthUser
 from dw_blog.services.user import UserService
+from dw_blog.services.blog import BlogService
 
 
 class TagService:
     def __init__(self, db_session: Session):
         self.db_session = db_session
         self.user_service = UserService(db_session)
+        self.blog_service = BlogService(db_session)
 
     async def create(
         self,
         current_user: AuthUser,
+        blog_id: UUID,
         name: str,
     ) -> TagRead:
-        user = await self.user_service.get(
-            user_id=str(current_user["user_id"])
+        """Add new tag for the specifed blog
+        Args:
+            current_user (AuthUser): current author object
+            blog_id (UUID): id of the blog
+            name (str): name of the tag
+        Raises:
+            TagFailedAdd: raised if tag addition failed
+        Returns:
+            TagRead: readable tag data
+        """
+        # Check if user is author of the blog
+        await self.blog_service.check_blog(
+            blog_id=blog_id,
+            current_user=current_user,
         )
-        is_admin = check_if_admin(user.user_type)
 
+        # Create new tag object
+        tag = Tag(
+            text=name,
+            blog_id=blog_id,
+            date_created=datetime.now(),
+            date_modified=datetime.now(),
+        )
+        # Add new tag to database
         try:
-            tag = Tag(
-                text=name,
-                date_created=datetime.now(),
-                date_modified=datetime.now(),
-            )
             self.db_session.add(tag)
             await self.db_session.commit()
             await self.db_session.refresh(tag)
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to add tag!",
+            raise TagFailedAdd(
+                blog_id=blog_id,
+                tag_name=name,
             )
 
-        return tag
+        return await self.get(tag_id=tag.id)
 
     async def get(
         self,
@@ -61,3 +79,6 @@ class TagService:
             )
         
         return tag
+
+async def get_tag_service(session: AsyncSession = Depends(get_session)):
+    yield TagService(session)

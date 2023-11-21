@@ -12,10 +12,12 @@ from dw_blog.models.blog import (
     Blog,
     BlogAuthors,
     BlogAuthor,
+    BlogTag,
 )
 from dw_blog.db.db import get_session
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.user import User, UserType
+from dw_blog.models.tag import Tag
 from dw_blog.services.user import UserService
 from dw_blog.exceptions.common import ListException, PaginationLimitSurpassed
 from dw_blog.exceptions.blog import (
@@ -102,9 +104,12 @@ class BlogService:
                 Blog.date_modified,
                 User.id.label("author_id"),
                 User.nickname.label("author_nickname"),
+                Tag.id.label("tag_id"),
+                Tag.name.label("tag_name"),
             )
             .join(BlogAuthors, onclause=Blog.id == BlogAuthors.blog_id, isouter=True)
             .join(User, onclause=BlogAuthors.author_id == User.id, isouter=True)
+            .join(Tag, onclause=Blog.id == Tag.blog_id, isouter=True)
             .where(Blog.id == blog_id)
         )
         result = await self.db_session.exec(q)
@@ -114,25 +119,37 @@ class BlogService:
         if len(blogs) == 0:
             raise BlogNotFound()
         
-        # Fetch data for authors field
+        # Fetch data for authors and tags field
         authors = []
+        already_added_users = []
+        tags = []
         for blog in blogs:
-            authors.append(
-                BlogAuthor(
-                    author_id=blog.author_id,
-                    nickname=blog.author_nickname,
+            if blog.author_id not in already_added_users:
+                authors.append(
+                    BlogAuthor(
+                        author_id=blog.author_id,
+                        nickname=blog.author_nickname,
+                    )
                 )
-            )
+            already_added_users.append(blog.author_id)
+
+            if blog.tag_name:
+                tags.append(
+                    BlogTag(
+                        tag_id=blog.tag_id,
+                        tag_name=blog.tag_name,
+                    )
+                )
 
         # Prepare and send response
-        blog_read = BlogRead(
+        return BlogRead(
             id=blog.id,
             name=blog.name,
             date_created=blog.date_created,
             date_modified=blog.date_modified,
-            authors=authors
+            authors=authors,
+            tags=tags,
         )
-        return blog_read
 
     async def list(
         self,
