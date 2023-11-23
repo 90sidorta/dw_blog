@@ -10,3 +10,12 @@ class TagFailedAdd(HTTPException):
              status_code=status.HTTP_400_BAD_REQUEST,
              detail=detail,
         )
+
+
+class TagNotFound(HTTPException):
+    def __init__(self, tag_id: UUID):
+        detail=f"Tag with id {tag_id} not found!",
+        super().__init__(
+             status_code=status.HTTP_404_NOT_FOUND,
+             detail=detail,
+        )

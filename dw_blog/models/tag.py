@@ -50,6 +50,8 @@ class TagCreate(SQLModel):
 
 class TagRead(TagBase):
     id: uuid.UUID
+    blog_id: uuid.UUID
+    blog_name: str
 
 
 class TagUpdate(TagCreate):

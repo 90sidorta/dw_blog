@@ -34,3 +34,24 @@ async def add_post(
         current_user=current_user,
         **request.dict()
     )
+
+
+@router.get(
+    "/{tag_id}",
+    response_model=TagRead,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
+    },
+    summary="Get single tag",
+    description="Get single tag data based on its id.",
+)
+async def get_blog(
+    tag_id: UUID,
+    tag_service: TagService = Depends(get_tag_service),
+):
+    return await tag_service.get(tag_id=tag_id)
+

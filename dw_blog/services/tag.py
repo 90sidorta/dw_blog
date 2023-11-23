@@ -8,10 +8,14 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
 from dw_blog.models.tag import TagRead, Tag
-from dw_blog.exceptions.tag import TagFailedAdd
+from dw_blog.exceptions.tag import (
+    TagFailedAdd,
+    TagNotFound,
+)
 from dw_blog.db.db import get_session
 from dw_blog.utils.auth import check_if_admin
 from dw_blog.models.auth import AuthUser
+from dw_blog.models.blog import Blog
 from dw_blog.services.user import UserService
 from dw_blog.services.blog import BlogService
 
@@ -46,7 +50,7 @@ class TagService:
 
         # Create new tag object
         tag = Tag(
-            text=name,
+            name=name,
             blog_id=blog_id,
             date_created=datetime.now(),
             date_modified=datetime.now(),
@@ -68,15 +72,26 @@ class TagService:
         self,
         tag_id: UUID,
     ) -> TagRead:
-        q = select(Tag).where(Tag.id == tag_id)
+        q = (
+            select(
+                Tag.id,
+                Tag.name,
+                Tag.date_created,
+                Tag.date_modified,
+                Blog.id.label("blog_id"),
+                Blog.name.label("blog_name"),
+            )
+            .join(
+                Blog,
+                onclause=Blog.id == Tag.blog_id,
+                isouter=True,
+            )
+            .where(Tag.id == tag_id))
         result = await self.db_session.exec(q)
         tag = result.first()
 
         if tag is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Tag not found!"
-            )
+            raise TagNotFound(tag_id=tag_id)
         
         return tag
 
