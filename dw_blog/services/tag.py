@@ -1,8 +1,7 @@
-from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from sqlmodel import Session, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -11,9 +10,10 @@ from dw_blog.models.tag import TagRead, Tag
 from dw_blog.exceptions.tag import (
     TagFailedAdd,
     TagNotFound,
+    TagUpdateFail,
+    TagDeleteFail,
 )
 from dw_blog.db.db import get_session
-from dw_blog.utils.auth import check_if_admin
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.blog import Blog
 from dw_blog.services.user import UserService
@@ -72,6 +72,16 @@ class TagService:
         self,
         tag_id: UUID,
     ) -> TagRead:
+        """Get single tag based on it's id
+        Args:
+            tag_id (UUID): tag of id
+        Raises:
+            TagNotFound: raised if no tag with
+            matching id exists
+        Returns:
+            TagRead: Tag data with blog name and id
+        """
+        # Query to return tag with blog data
         q = (
             select(
                 Tag.id,
@@ -90,10 +100,70 @@ class TagService:
         result = await self.db_session.exec(q)
         tag = result.first()
 
+        # Raise exception if no tag found
         if tag is None:
             raise TagNotFound(tag_id=tag_id)
         
         return tag
+
+    async def update(
+        self,
+        tag_id: UUID,
+        current_user: AuthUser,
+        name: str,
+    ) -> TagRead:
+        """Updates tag data
+        Args:
+            tag_id (UUID): id of blog to be updated
+            current_user (AuthUser): current user object
+            name (str): new tag name
+        Raises:
+            TagUpdateFail: raised if tag update failed
+        Returns:
+            TagRead: Read tag
+        """
+        update_tag = await self.db_session.get(Tag, tag_id)
+        await self.check_blog(
+            blog_id=update_tag.blog_id,
+            current_user=current_user,
+        )
+
+        # Update blog name
+        if name:
+            update_tag.name = name
+        try:
+            self.db_session.add(update_tag)
+            await self.db_session.commit()
+        except Exception:
+            raise TagUpdateFail()
+
+        return await self.get(tag_id=tag_id)
+
+    async def delete(
+        self,
+        tag_id: UUID,
+        current_user: AuthUser,
+    ) -> None:
+        """Deletes tag based on its id and
+        user permissions
+        Args:
+            tag_id (UUID): tag id
+            current_user (AuthUser): current user object
+        Raises:
+            TagDeleteFail: raised if failed to delete tag
+        """
+        delete_tag = await self.db_session.get(Tag, tag_id)
+        await self.check_blog(
+            blog_id=delete_tag.blog_id,
+            current_user=current_user,
+        )
+
+        # Delete blog
+        try:
+            self.db_session.delete(delete_tag)
+            self.db_session.commit()
+        except Exception:
+            raise TagDeleteFail()
 
 async def get_tag_service(session: AsyncSession = Depends(get_session)):
     yield TagService(session)

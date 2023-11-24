@@ -4,7 +4,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, status
 
 from dw_blog.models.common import ErrorModel
-from dw_blog.models.blog import BlogCreate, BlogRead, BlogUpdate
+from dw_blog.models.blog import BlogCreate, BlogRead, BlogUpdate, BlogReadList
 from dw_blog.services.blog import BlogService, get_blog_service
 from dw_blog.utils.auth import get_current_user
 from dw_blog.models.auth import AuthUser
@@ -59,7 +59,7 @@ async def get_blog(
 
 @router.get(
     "",
-    response_model=List[BlogRead],
+    response_model=List[BlogReadList],
     status_code=status.HTTP_200_OK,
     responses={
         400: {"model": ErrorModel},
@@ -75,12 +75,14 @@ async def list_blogs(
     limit: int = 10,
     offset: int = 0,
     blog_name: Optional[str] = None,
+    author_id: Optional[UUID] = None,
     blog_service: BlogService = Depends(get_blog_service),
 ):
     return await blog_service.list(
         limit=limit,
         offset=offset,
         blog_name=blog_name,
+        author_id=author_id,
     )
 
 

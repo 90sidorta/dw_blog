@@ -4,7 +4,7 @@ from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
 
 from dw_blog.models.common import UserType
-from dw_blog.models.blog import BlogAuthors, Blog
+from dw_blog.models.blog import BlogAuthors, Blog, BlogSubscribers, BlogLikes
 
 
 class UserBase(SQLModel):
@@ -34,6 +34,7 @@ class UserBase(SQLModel):
 
 
 class User(UserBase, table=True):
+    __tablename__ = 'user'
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
@@ -42,6 +43,14 @@ class User(UserBase, table=True):
     blogs: Optional[List[Blog]] = Relationship(
         back_populates="authors",
         link_model=BlogAuthors,
+    )
+    liked_blogs: Optional[List[Blog]] = Relationship(
+        back_populates="likers",
+        link_model=BlogLikes,
+    )
+    subscribed_blogs: Optional[List[Blog]] = Relationship(
+        back_populates="subscribers",
+        link_model=BlogSubscribers,
     )
 
 

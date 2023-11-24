@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import Depends
-from sqlmodel import Session, select, delete
+from sqlmodel import Session, select, delete, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
@@ -13,6 +13,11 @@ from dw_blog.models.blog import (
     BlogAuthors,
     BlogAuthor,
     BlogTag,
+    BlogReadList,
+    BlogLikes,
+    BlogLiker,
+    BlogSubscriber,
+    BlogSubscribers,
 )
 from dw_blog.db.db import get_session
 from dw_blog.models.auth import AuthUser
@@ -34,6 +39,9 @@ from dw_blog.exceptions.blog import (
     BlogDeleteFail,
 )
 
+
+UserLiker = User.__table__.alias()
+UserSubscriber = User.__table__.alias()
 
 class BlogService:
     def __init__(self, db_session: Session):
@@ -86,7 +94,8 @@ class BlogService:
     async def get(
         self,
         blog_id: UUID,
-    ) -> BlogRead:
+    ):
+    #  -> BlogRead:
         """Get blog data from database
         Args:
             blog_id (UUID): id of blog to be read
@@ -102,67 +111,81 @@ class BlogService:
                 Blog.name,
                 Blog.date_created,
                 Blog.date_modified,
-                User.id.label("author_id"),
-                User.nickname.label("author_nickname"),
-                Tag.id.label("tag_id"),
-                Tag.name.label("tag_name"),
+                func.array_agg(func.distinct(User.id)).label("author_id"),
+                func.array_agg(func.distinct(User.nickname)).label("author_nickname"),
+                func.array_agg(func.distinct(Tag.id)).label("tag_id"),
+                func.array_agg(func.distinct(Tag.name)).label("tag_name"),
+                func.array_agg(func.distinct(UserLiker.c.id)).label("likers_id"),
+                func.array_agg(func.distinct(UserLiker.c.nickname)).label("likers_nicknames"),
+                func.array_agg(func.distinct(UserSubscriber.c.id)).label("subscriber_id"),
+                func.array_agg(func.distinct(UserSubscriber.c.nickname)).label("subscriber_nicknames"),
             )
             .join(BlogAuthors, onclause=Blog.id == BlogAuthors.blog_id, isouter=True)
             .join(User, onclause=BlogAuthors.author_id == User.id, isouter=True)
+            .join(BlogLikes, onclause=Blog.id == BlogLikes.blog_id, isouter=True)
+            .join(UserLiker, onclause=BlogLikes.liker_id == UserLiker.c.id, isouter=True)
+            .join(BlogSubscribers, onclause=Blog.id == BlogSubscribers.blog_id, isouter=True)
+            .join(UserSubscriber, onclause=BlogSubscribers.subscriber_id == UserSubscriber.c.id, isouter=True)
             .join(Tag, onclause=Blog.id == Tag.blog_id, isouter=True)
             .where(Blog.id == blog_id)
+            .group_by(Blog.id)
         )
         result = await self.db_session.exec(q)
-        blogs = result.all()
+        blog = result.first()
+
+        print("q", q)
+        print(blog)
 
         # If no blog was found raise an exception
-        if len(blogs) == 0:
+        if not blog:
             raise BlogNotFound()
-        
-        # Fetch data for authors and tags field
-        authors = []
-        already_added_users = []
-        tags = []
-        for blog in blogs:
-            if blog.author_id not in already_added_users:
-                authors.append(
-                    BlogAuthor(
-                        author_id=blog.author_id,
-                        nickname=blog.author_nickname,
-                    )
-                )
-            already_added_users.append(blog.author_id)
 
-            if blog.tag_name:
-                tags.append(
-                    BlogTag(
-                        tag_id=blog.tag_id,
-                        tag_name=blog.tag_name,
-                    )
-                )
 
         # Prepare and send response
         return BlogRead(
-            id=blog.id,
-            name=blog.name,
-            date_created=blog.date_created,
-            date_modified=blog.date_modified,
-            authors=authors,
-            tags=tags,
+            id=blog[0],
+            name=blog[1],
+            date_created=blog[2],
+            date_modified=blog[3],
+            authors=[
+                BlogAuthor(
+                    author_id=author_id,
+                    nickname=nickname
+                ) for author_id, nickname in zip(blog[4], blog[5])
+            ],
+            tags=[
+                BlogTag(
+                    tag_id=tag_id,
+                    tag_name=tag_name
+                ) for tag_id, tag_name in zip(blog[6], blog[7])
+            ],
+            likers=[
+                BlogLiker(
+                    liker_id=liker_id,
+                    nickname=nickname,
+                ) for liker_id, nickname in zip(blog[8], blog[9])
+            ],
+            subscribers=[
+                BlogSubscriber(
+                    subscriber_id=subscriber_id,
+                    nickname=nickname,
+                ) for subscriber_id, nickname in zip(blog[10], blog[11])
+            ]
         )
 
     async def list(
         self,
         limit: int,
         offset: int,
-        author_name: Optional[str] = None,
         blog_name: Optional[str] = None,
-    ) -> List[BlogRead]:
+        author_id: Optional[UUID] = None,
+    ) -> List[BlogReadList]:
         """Get listed blogs based - either all or based on authors_name or blog_name
         Args:
             limit [int]: up to how many results per page
             offset [int]: how many records should be skipped
             blog_name (Optional[str], optional): Name of the blog. Defaults to None.
+            author_id (Optional[str], optional): Id of the author. Defaults to None.
         Raises:
             BlogNotFound: raised if no blog matching criteria exists
             PaginationLimitSurpassed: raised if limit was suprassed
@@ -178,18 +201,28 @@ class BlogService:
         # Get blogs if user searches them on the basis of blog name
         if blog_name:
             q = q.where(Blog.name.ilike(f"%{blog_name}%"))
+        if author_id:
+            q = (
+                q
+                .join(
+                    BlogAuthors,
+                    onclause=BlogAuthors.blog_id == Blog.id,
+                    isouter=True
+                )
+                .join(
+                    User,
+                    onclause=User.id == BlogAuthors.author_id,
+                    isouter=True
+                )
+                .where(User.id == author_id)
+            )
         # Add pagination to query
         q = q.limit(limit).offset(offset)
         # Execute query
         blogs_result = await self.db_session.exec(q)
         blogs = blogs_result.fetchall()
-
-        # Prepare read blog response
-        return_blogs = []
-        for blog in blogs:
-            return_blogs.append(await self.get(blog_id=blog.id))
         
-        return return_blogs
+        return blogs
 
     async def check_blog(
         self,

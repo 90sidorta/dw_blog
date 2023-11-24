@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 
 from dw_blog.db.db import init_db
-from dw_blog.routers.example import router as example_router
 from dw_blog.routers.user import router as user_router
 from dw_blog.routers.auth import router as auth_router
 from dw_blog.routers.post import router as post_router
@@ -11,33 +10,28 @@ from dw_blog.routers.tag import router as tag_router
 app = FastAPI()
 
 app.include_router(
-    example_router,
-    tags=["example"],
-    prefix="/example"
-)
-app.include_router(
     user_router,
-    tags=["users"],
+    tags=["Users"],
     prefix="/users"
 )
 app.include_router(
     auth_router,
-    tags=["auth"],
+    tags=["Auth"],
     prefix="/auth"
 )
 app.include_router(
     post_router,
-    tags=["posts"],
+    tags=["Posts"],
     prefix="/posts"
 )
 app.include_router(
     blog_router,
-    tags=["blogs"],
+    tags=["Blogs"],
     prefix="/blogs"
 )
 app.include_router(
     tag_router,
-    tags=["tags"],
+    tags=["Tags"],
     prefix="/tags"
 )
 
