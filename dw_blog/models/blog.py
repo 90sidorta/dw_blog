@@ -65,23 +65,23 @@ class BlogUpdate(BlogCreate):
 
 
 class BlogAuthor(SQLModel):
-    author_id: uuid.UUID
-    nickname: str
+    author_id: Optional[uuid.UUID]
+    nickname: Optional[str]
 
 
 class BlogLiker(SQLModel):
-    liker_id: uuid.UUID
-    nickname: str
+    liker_id: Optional[uuid.UUID]
+    nickname: Optional[str]
 
 
 class BlogSubscriber(SQLModel):
-    subscriber_id: uuid.UUID
-    nickname: str
+    subscriber_id: Optional[uuid.UUID]
+    nickname: Optional[str]
 
 
 class BlogTag(SQLModel):
-    tag_id: uuid.UUID
-    tag_name: str
+    tag_id: Optional[uuid.UUID]
+    tag_name: Optional[str]
 
 
 class BlogRead(SQLModel):

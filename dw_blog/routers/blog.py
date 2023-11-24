@@ -139,6 +139,56 @@ async def remove_blog_authors(
     )
 
 
+@router.post(
+    "/{blog_id}/subscribe",
+    response_model=BlogRead,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
+        422: {"model": ErrorModel},
+    },
+    summary="Subscribe to a blog",
+    description="Remove authors from a blog (until one is left).",
+)
+async def add_blog_subscription(
+    blog_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    blog_service: BlogService = Depends(get_blog_service),
+):
+    return await blog_service.subscribe(
+        blog_id=blog_id,
+        current_user=current_user,
+    )
+
+
+@router.post(
+    "/{blog_id}/subscribe",
+    response_model=BlogRead,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
+        422: {"model": ErrorModel},
+    },
+    summary="Unsubscribe to a blog",
+    description="Remove subscription from a blog (if it exists).",
+)
+async def remove_blog_subscription(
+    blog_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    blog_service: BlogService = Depends(get_blog_service),
+):
+    return await blog_service.unsubscribe(
+        blog_id=blog_id,
+        current_user=current_user,
+    )
+
+
 @router.patch(
     "/{blog_id}",
     response_model=BlogRead,

@@ -100,3 +100,39 @@ class BlogDeleteFail(HTTPException):
              status_code=status.HTTP_400_BAD_REQUEST,
              detail=detail,
         )
+
+
+class BlogAlreadySubscribed(HTTPException):
+    def __init__(self):
+        detail="You already subscribe this blog!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
+
+
+class BlogNotSubscribed(HTTPException):
+    def __init__(self):
+        detail="You don't subscribe this blog!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
+
+
+class BlogSubscribtionFail(HTTPException):
+    def __init__(self):
+        detail="Failed to subscribe this blog!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
+
+
+class BlogUnsubscribtionFail(HTTPException):
+    def __init__(self):
+        detail="Failed to unsubscribe this blog!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )

@@ -37,6 +37,10 @@ from dw_blog.exceptions.blog import (
     BlogDeleteAuthorFail,
     BlogUpdateFail,
     BlogDeleteFail,
+    BlogAlreadySubscribed,
+    BlogSubscribtionFail,
+    BlogNotSubscribed,
+    BlogUnsubscribtionFail,
 )
 
 
@@ -132,9 +136,6 @@ class BlogService:
         )
         result = await self.db_session.exec(q)
         blog = result.first()
-
-        print("q", q)
-        print(blog)
 
         # If no blog was found raise an exception
         if not blog:
@@ -402,6 +403,83 @@ class BlogService:
             raise BlogDeleteAuthorFail()
 
         return await self.get(blog_id=blog_id) 
+
+    async def check_subscription(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+    ):
+        q = (
+            select(BlogSubscribers)
+            .where(
+                BlogSubscribers.blog_id == blog_id,
+                BlogSubscribers.subscriber_id == current_user["user_id"],
+            )
+        ) 
+        result = await self.db_session.exec(q)
+        already_subscribes = result.first()
+        return already_subscribes
+
+    async def subscribe(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+    ):
+        # Check if user is not already a subscriber
+        already_subscribes = await self.check_subscription(
+            blog_id=blog_id,
+            current_user=current_user
+        )
+        if already_subscribes:
+            raise BlogAlreadySubscribed()
+        
+        # Try to add new subscription
+        try:
+            subscription = BlogSubscribers(
+                blog_id=blog_id,
+                subscriber_id=current_user["user_id"]
+            )
+            self.db_session.add(subscription)
+            await self.db_session.commit()
+            await self.db_session.refresh(subscription)
+        except Exception:
+            raise BlogSubscribtionFail()
+        return await self.get(blog_id=blog_id)
+
+    async def unsubscribe(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+    ):
+        # Check if user is not already a subscriber
+        already_subscribes = await self.check_subscription(
+            blog_id=blog_id,
+            current_user=current_user
+        )
+        if not already_subscribes:
+            raise BlogNotSubscribed()
+        
+        # Delete subscription
+        try:
+            self.db_session.delete(already_subscribes)
+            self.db_session.commit()
+        except Exception:
+            raise BlogUnsubscribtionFail()
+        return await self.get(blog_id=blog_id)
+
+    async def like(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+    ):
+        pass
+
+    async def unlike(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+    ):
+        pass
 
     async def delete(
         self,
