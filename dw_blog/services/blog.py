@@ -377,7 +377,16 @@ class BlogService:
         self,
         blog_id: UUID,
         current_user: AuthUser,
-    ):
+    ) -> Union[BlogSubscribers, None]:
+        """Checks if user is a subscriber of blog
+        based on blog id and current user id
+        Args:
+            blog_id (UUID): id of the blog
+            current_user (AuthUser): logged user object
+        Returns:
+            Union[BlogSubscribers, None]: Either there is
+            a subscription for this blog and user or not
+        """
         q = check_subscription_query(
             blog_id=blog_id,
             current_user=current_user,
@@ -390,7 +399,16 @@ class BlogService:
         self,
         blog_id: UUID,
         current_user: AuthUser,
-    ):
+    ) -> Union[BlogLikes, None]:
+        """Checks if user is a liker of blog
+        based on blog id and current user id
+        Args:
+            blog_id (UUID): id of the blog
+            current_user (AuthUser): logged user object
+        Returns:
+            Union[BlogLikes, None]: Either there is
+            a like for this blog and user or not
+        """
         q = check_like_query(
             blog_id=blog_id,
             current_user=current_user
@@ -403,7 +421,20 @@ class BlogService:
         self,
         blog_id: UUID,
         current_user: AuthUser,
-    ):
+    ) -> BlogRead:
+        """This function creates a new subscribe record
+        Args:
+            blog_id (UUID): id of the blog to be
+            subscribed to
+            current_user (AuthUser): current user object
+        Raises:
+            BlogAlreadySubscribed: raised if blog is already
+            subscribed by the user
+            BlogSubscribtionFail: raised if blog subscription
+            failed
+        Returns:
+            BlogRead: blog data
+        """
         # Check if user is not already a subscriber
         already_subscribes = await self.check_subscription(
             blog_id=blog_id,
@@ -429,7 +460,19 @@ class BlogService:
         self,
         blog_id: UUID,
         current_user: AuthUser,
-    ):
+    ) -> BlogRead:
+        """This function deletes subscription entry
+        Args:
+            blog_id (UUID): id of the blog to unsubscribe
+            current_user (AuthUser): current user object
+        Raises:
+            BlogNotSubscribed: raised if blog was not
+            subscribed by the user
+            BlogUnsubscribtionFail: raised if any exception
+            occured in the process
+        Returns:
+            BlogRead: blog data
+        """
         # Check if user is not already a subscriber
         already_subscribes = await self.check_subscription(
             blog_id=blog_id,
@@ -450,7 +493,17 @@ class BlogService:
         self,
         blog_id: UUID,
         current_user: AuthUser,
-    ):
+    ) -> BlogRead:
+        """This adds like record to the database
+        Args:
+            blog_id (UUID): id of the blog to be liked
+            current_user (AuthUser): current user object
+        Raises:
+            BlogAlreadyLiked: raised if blog already liked
+            BlogLikeFail: raised if operation failed
+        Returns:
+            BlogRead: blog data
+        """
         # Check if user is not already a liker
         already_likes = await self.check_like(
             blog_id=blog_id,
@@ -476,7 +529,17 @@ class BlogService:
         self,
         blog_id: UUID,
         current_user: AuthUser,
-    ):
+    ) -> BlogRead:
+        """Deletes like entry from the database
+        Args:
+            blog_id (UUID): id of the blog to be unliked
+            current_user (AuthUser): current user object
+        Raises:
+            BlogNotLiked: raised if blog was not liked by the user
+            BlogUnlikeFail: raised if blog like process failed
+        Returns:
+            BlogRead: blog data
+        """
         # Check if user is not already a subscriber
         already_likes = await self.check_like(
             blog_id=blog_id,
