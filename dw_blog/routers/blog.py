@@ -251,7 +251,7 @@ async def remove_blog_like(
         422: {"model": ErrorModel},
     },
     summary="Update blog",
-    description="Allows authors and admin to update blogs name.",
+    description="Allows authors and admin to update blogs name or deactivate the blog.",
 )
 async def update_blog(
     blog_id: UUID,

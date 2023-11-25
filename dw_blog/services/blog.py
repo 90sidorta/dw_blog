@@ -21,7 +21,7 @@ from dw_blog.models.blog import (
 )
 from dw_blog.db.db import get_session
 from dw_blog.models.auth import AuthUser
-from dw_blog.models.user import User, UserType
+from dw_blog.models.user import UserType
 from dw_blog.queries.blog import (
     get_single_blog_query,
     get_listed_blogs_query,
@@ -54,9 +54,6 @@ from dw_blog.exceptions.blog import (
     BlogUnlikeFail,
 )
 
-
-UserLiker = User.__table__.alias()
-UserSubscriber = User.__table__.alias()
 
 class BlogService:
     def __init__(self, db_session: Session):
@@ -222,13 +219,15 @@ class BlogService:
         self,
         blog_id: UUID,
         current_user: AuthUser,
-        name: str,
+        name: Optional[str] = None,
+        archived: Optional[bool] = None,
     ) -> BlogRead:
         """Updates blog data
         Args:
             blog_id (UUID): id of blog to be updated
             current_user (AuthUser): current user object
             name (str): new blog name
+            archived (bool): archive the blog
         Raises:
             BlogUpdateFail: raised if blog update failed
         Returns:
@@ -243,6 +242,8 @@ class BlogService:
         update_blog = await self.db_session.get(Blog, blog_id)
         if name:
             update_blog.name = name
+        if archived:
+            update_blog.archived = archived
         try:
             self.db_session.add(update_blog)
             await self.db_session.commit()

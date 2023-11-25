@@ -60,8 +60,13 @@ class BlogCreate(SQLModel):
     )
 
 
-class BlogUpdate(BlogCreate):
-    pass
+class BlogUpdate(SQLModel):
+    name: Optional[str] = Field(
+        min_length=3,
+        max_length=500,
+        nullable=True,
+    )
+    archived: Optional[bool] = False
 
 
 class BlogAuthor(SQLModel):
