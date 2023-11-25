@@ -89,6 +89,18 @@ async def add_admin_user(async_session: AsyncSession) -> User:
     return user
 
 
+@pytest.fixture
+async def access_token(
+    async_client: AsyncClient,
+):
+    response = await async_client.post(
+        f"/auth/token",
+        data={"username": ADMIN_EMAIL, "password": "testtest2!", "grant_type": "password"},
+        headers={"content-type": "application/x-www-form-urlencoded"},
+    )
+    return response.json()["access_token"]
+
+
 def _add_user(db_session, **kwargs):
     user = UserFactory(**kwargs)
     db_session.add(user)

@@ -13,7 +13,6 @@ from dw_blog.models.common import UserType
 
 async def test__get_user_200(
     async_client: AsyncClient,
-    async_session: AsyncSession,
     add_admin_user,
 ):
     response = await async_client.get(

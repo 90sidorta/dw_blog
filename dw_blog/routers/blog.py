@@ -31,10 +31,11 @@ async def add_blog(
     blog_service: BlogService = Depends(get_blog_service),
     current_user: AuthUser = Depends(get_current_user),
 ):
-    return await blog_service.create(
+    blog = await blog_service.create(
         current_user=current_user,
         **request.dict()
     )
+    return BlogRead(**blog.__dict__)
 
 
 @router.get(
