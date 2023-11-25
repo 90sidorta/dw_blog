@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import Depends
-from sqlmodel import Session, select, delete, func
+from sqlmodel import Session, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
@@ -22,7 +22,14 @@ from dw_blog.models.blog import (
 from dw_blog.db.db import get_session
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.user import User, UserType
-from dw_blog.models.tag import Tag
+from dw_blog.queries.blog import (
+    get_single_blog_query,
+    get_listed_blogs_query,
+    is_author_query,
+    delete_author_query,
+    check_subscription_query,
+    check_like_query,
+)
 from dw_blog.services.user import UserService
 from dw_blog.exceptions.common import ListException, PaginationLimitSurpassed
 from dw_blog.exceptions.blog import (
@@ -41,6 +48,10 @@ from dw_blog.exceptions.blog import (
     BlogSubscribtionFail,
     BlogNotSubscribed,
     BlogUnsubscribtionFail,
+    BlogAlreadyLiked,
+    BlogNotLiked,
+    BlogLikeFail,
+    BlogUnlikeFail,
 )
 
 
@@ -109,38 +120,13 @@ class BlogService:
             BlogRead: Read blog with author data
         """
         # Construct query with joined authors data
-        q = (
-            select(
-                Blog.id,
-                Blog.name,
-                Blog.date_created,
-                Blog.date_modified,
-                func.array_agg(func.distinct(User.id)).label("author_id"),
-                func.array_agg(func.distinct(User.nickname)).label("author_nickname"),
-                func.array_agg(func.distinct(Tag.id)).label("tag_id"),
-                func.array_agg(func.distinct(Tag.name)).label("tag_name"),
-                func.array_agg(func.distinct(UserLiker.c.id)).label("likers_id"),
-                func.array_agg(func.distinct(UserLiker.c.nickname)).label("likers_nicknames"),
-                func.array_agg(func.distinct(UserSubscriber.c.id)).label("subscriber_id"),
-                func.array_agg(func.distinct(UserSubscriber.c.nickname)).label("subscriber_nicknames"),
-            )
-            .join(BlogAuthors, onclause=Blog.id == BlogAuthors.blog_id, isouter=True)
-            .join(User, onclause=BlogAuthors.author_id == User.id, isouter=True)
-            .join(BlogLikes, onclause=Blog.id == BlogLikes.blog_id, isouter=True)
-            .join(UserLiker, onclause=BlogLikes.liker_id == UserLiker.c.id, isouter=True)
-            .join(BlogSubscribers, onclause=Blog.id == BlogSubscribers.blog_id, isouter=True)
-            .join(UserSubscriber, onclause=BlogSubscribers.subscriber_id == UserSubscriber.c.id, isouter=True)
-            .join(Tag, onclause=Blog.id == Tag.blog_id, isouter=True)
-            .where(Blog.id == blog_id)
-            .group_by(Blog.id)
-        )
+        q = get_single_blog_query(blog_id=blog_id)
         result = await self.db_session.exec(q)
         blog = result.first()
 
         # If no blog was found raise an exception
         if not blog:
             raise BlogNotFound()
-
 
         # Prepare and send response
         return BlogRead(
@@ -198,27 +184,12 @@ class BlogService:
             raise PaginationLimitSurpassed()
 
         # Create query
-        q = select(Blog)
-        # Get blogs if user searches them on the basis of blog name
-        if blog_name:
-            q = q.where(Blog.name.ilike(f"%{blog_name}%"))
-        if author_id:
-            q = (
-                q
-                .join(
-                    BlogAuthors,
-                    onclause=BlogAuthors.blog_id == Blog.id,
-                    isouter=True
-                )
-                .join(
-                    User,
-                    onclause=User.id == BlogAuthors.author_id,
-                    isouter=True
-                )
-                .where(User.id == author_id)
-            )
-        # Add pagination to query
-        q = q.limit(limit).offset(offset)
+        q = get_listed_blogs_query(
+            limit=limit,
+            offset=offset,
+            blog_name=blog_name,
+            author_id=author_id,
+        )
         # Execute query
         blogs_result = await self.db_session.exec(q)
         blogs = blogs_result.fetchall()
@@ -293,13 +264,11 @@ class BlogService:
             Union[BlogAuthors, None]: either result from Blog
             Authors table or None
         """
-        author_already_result = await self.db_session.exec(
-            select(BlogAuthors)
-            .where(
-                BlogAuthors.blog_id == blog_id,
-                BlogAuthors.author_id == author_id,
-            )
+        q = is_author_query(
+            blog_id=blog_id,
+            author_id=author_id,
         )
+        author_already_result = await self.db_session.exec(q)
         return author_already_result.first()
 
     async def add_author_to_blog(
@@ -392,9 +361,9 @@ class BlogService:
             raise BlogLastAuthor()
 
         # Remove author from the blog
-        q = delete(BlogAuthors).where(
-            (BlogAuthors.author_id == remove_author_id),
-            (BlogAuthors.blog_id == blog_id),
+        q = delete_author_query(
+            blog_id=blog_id,
+            remove_author_id=remove_author_id
         )
         try:
             self.db_session.exec(q)
@@ -409,16 +378,26 @@ class BlogService:
         blog_id: UUID,
         current_user: AuthUser,
     ):
-        q = (
-            select(BlogSubscribers)
-            .where(
-                BlogSubscribers.blog_id == blog_id,
-                BlogSubscribers.subscriber_id == current_user["user_id"],
-            )
-        ) 
+        q = check_subscription_query(
+            blog_id=blog_id,
+            current_user=current_user,
+        )
         result = await self.db_session.exec(q)
         already_subscribes = result.first()
         return already_subscribes
+    
+    async def check_like(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+    ):
+        q = check_like_query(
+            blog_id=blog_id,
+            current_user=current_user
+        )
+        result = await self.db_session.exec(q)
+        already_likes = result.first()
+        return already_likes
 
     async def subscribe(
         self,
@@ -472,14 +451,47 @@ class BlogService:
         blog_id: UUID,
         current_user: AuthUser,
     ):
-        pass
+        # Check if user is not already a liker
+        already_likes = await self.check_like(
+            blog_id=blog_id,
+            current_user=current_user
+        )
+        if already_likes:
+            raise BlogAlreadyLiked()
+        
+        # Try to add new subscription
+        try:
+            like = BlogLikes(
+                blog_id=blog_id,
+                subscriber_id=current_user["user_id"]
+            )
+            self.db_session.add(like)
+            await self.db_session.commit()
+            await self.db_session.refresh(like)
+        except Exception:
+            raise BlogLikeFail()
+        return await self.get(blog_id=blog_id)
 
     async def unlike(
         self,
         blog_id: UUID,
         current_user: AuthUser,
     ):
-        pass
+        # Check if user is not already a subscriber
+        already_likes = await self.check_like(
+            blog_id=blog_id,
+            current_user=current_user
+        )
+        if not already_likes:
+            raise BlogNotLiked()
+        
+        # Delete subscription
+        try:
+            self.db_session.delete(already_likes)
+            self.db_session.commit()
+        except Exception:
+            raise BlogUnlikeFail()
+        return await self.get(blog_id=blog_id)
 
     async def delete(
         self,

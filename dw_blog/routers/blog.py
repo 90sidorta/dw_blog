@@ -151,7 +151,7 @@ async def remove_blog_authors(
         422: {"model": ErrorModel},
     },
     summary="Subscribe to a blog",
-    description="Remove authors from a blog (until one is left).",
+    description="Add blog subscription for user (if already not subscribed).",
 )
 async def add_blog_subscription(
     blog_id: UUID,
@@ -184,6 +184,56 @@ async def remove_blog_subscription(
     blog_service: BlogService = Depends(get_blog_service),
 ):
     return await blog_service.unsubscribe(
+        blog_id=blog_id,
+        current_user=current_user,
+    )
+
+
+@router.post(
+    "/{blog_id}/like",
+    response_model=BlogRead,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
+        422: {"model": ErrorModel},
+    },
+    summary="Like a blog",
+    description="Add user a liker to a blog (if not like).",
+)
+async def add_blog_like(
+    blog_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    blog_service: BlogService = Depends(get_blog_service),
+):
+    return await blog_service.like(
+        blog_id=blog_id,
+        current_user=current_user,
+    )
+
+
+@router.post(
+    "/{blog_id}/unlike",
+    response_model=BlogRead,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
+        422: {"model": ErrorModel},
+    },
+    summary="Remove like",
+    description="Removes like from a blog (if it exists).",
+)
+async def remove_blog_like(
+    blog_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    blog_service: BlogService = Depends(get_blog_service),
+):
+    return await blog_service.unlike(
         blog_id=blog_id,
         current_user=current_user,
     )

@@ -136,3 +136,39 @@ class BlogUnsubscribtionFail(HTTPException):
              status_code=status.HTTP_400_BAD_REQUEST,
              detail=detail,
         )
+
+
+class BlogAlreadyLiked(HTTPException):
+    def __init__(self):
+        detail="You already liked this blog!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
+
+
+class BlogNotLiked(HTTPException):
+    def __init__(self):
+        detail="You did not like this blog!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
+
+
+class BlogLikeFail(HTTPException):
+    def __init__(self):
+        detail="Failed to like this blog!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
+
+
+class BlogUnlikeFail(HTTPException):
+    def __init__(self):
+        detail="Failed to unlike this blog!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
