@@ -13,7 +13,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import create_database, database_exists
 
 from dw_blog.config import Settings
+from dw_blog.utils.auth import create_access_token
 from tests.factories import UserFactory, ADMIN_ID, ADMIN_EMAIL
+from dw_blog.models.auth import TokenType
+from dw_blog.models.common import UserType
 from main import app
 
 settings = Settings()
@@ -41,21 +44,20 @@ async def async_client():
 
 @pytest.fixture(scope='session')
 async def async_db_engine():
+    # Create test db if it does not exist
+    if not database_exists(sync_engine.url):
+        create_database(sync_engine.url)
     async with async_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
     yield async_engine
 
-    async with async_engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
+    # async with async_engine.begin() as conn:
+    #     await conn.run_sync(SQLModel.metadata.drop_all)
 
 
 @pytest_asyncio.fixture(scope="function")
 async def async_session(async_db_engine) -> AsyncSession:
-    # Create test db if it does not exist
-    if not database_exists(sync_engine.url):
-        create_database(sync_engine.url)
-
     async_session = sessionmaker(
         expire_on_commit=False,
         autocommit=False,
@@ -74,10 +76,10 @@ async def async_session(async_db_engine) -> AsyncSession:
         session.add(user)
         await session.commit()
 
-    async with async_engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
+    # async with async_engine.begin() as conn:
+    #     await conn.run_sync(SQLModel.metadata.drop_all)
 
-    await async_engine.dispose()
+    # await async_engine.dispose()
 
 
 @pytest.fixture(scope="function")
