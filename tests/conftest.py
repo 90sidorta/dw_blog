@@ -7,22 +7,26 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 from sqlmodel import SQLModel
-
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy_utils import create_database, database_exists
 
 from dw_blog.config import Settings
+from tests.factories import UserFactory, ADMIN_ID, ADMIN_EMAIL
 from main import app
 
 settings = Settings()
 db_url_test_sync = settings.DATABASE_URL_TEST_SYNC
 db_url_test = settings.DATABASE_URL_TEST
 root = settings.ROOT_DIR
-
+async_engine = create_async_engine(db_url_test, echo=True, future=True)
+sync_engine = create_engine(db_url_test_sync)
 
 @pytest.fixture(scope="session")
 def event_loop(request) -> Generator:  # noqa: indirect usage
-    loop = asyncio.get_event_loop_policy().new_event_loop()
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
     yield loop
     loop.close()
 
@@ -35,19 +39,40 @@ async def async_client():
     ) as client:
         yield client
 
+@pytest.fixture(scope='session')
+async def async_db_engine():
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+
+    yield async_engine
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.drop_all)
+
 
 @pytest_asyncio.fixture(scope="function")
-async def async_session() -> AsyncSession:
-    async_engine = create_async_engine(db_url_test, echo=True, future=True)
-    session = sessionmaker(
-        async_engine, class_=AsyncSession, expire_on_commit=False
+async def async_session(async_db_engine) -> AsyncSession:
+    # Create test db if it does not exist
+    if not database_exists(sync_engine.url):
+        create_database(sync_engine.url)
+
+    async_session = sessionmaker(
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+        bind=async_db_engine,
+        class_=AsyncSession,
     )
 
-    async with session() as s:
-        async with async_engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.create_all)
+    async with async_session() as session:
+        await session.begin()
 
-        yield s
+        yield session
+
+        # Add admin user
+        user = UserFactory(id=ADMIN_ID, email=ADMIN_EMAIL)
+        session.add(user)
+        await session.commit()
 
     async with async_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
@@ -67,3 +92,10 @@ def test_data() -> dict:
         data = json.loads(file.read())
 
     return data
+
+
+def _add_user(db_session, **kwargs):
+    user = UserFactory(**kwargs)
+    db_session.add(user)
+    db_session.commit()
+    return user

@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 
 from dw_blog.models.user import User
+from dw_blog.models.blog import Blog
+from dw_blog.models.tag import Tag
 from dw_blog.models.common import UserType
 
 import factory.fuzzy
@@ -18,5 +20,28 @@ class UserFactory(factory.Factory):
     nickname = factory.Sequence(lambda n: f"user_nickname_{n}")
     user_type = factory.fuzzy.FuzzyChoice([img_type for img_type in UserType])
     email = factory.Faker("company_email", locale="pl_PL")
-    hashed_password = factory.Faker("uuid4")
-    description = factory.FuzzyText(prefix='Desc', length=20)
+    password = "$2b$12$oeSFt.wxV0piPYVUiDY.eeBaMfkJHwOt6BZOj4Wsno1kvkee0be6C"
+    description = factory.fuzzy.FuzzyText(prefix='Desc', length=20)
+
+
+class TagFactory(factory.Factory):
+    class Meta:
+        model = Tag
+
+    id = factory.Faker("uuid4")
+    name = factory.Sequence(lambda n: f"#tag_name_{n}")
+    blog_id = None
+
+
+class BlogFactory(factory.Factory):
+    class Meta:
+        model = Blog
+
+    id = factory.Faker("uuid4")
+    archived = False
+    date_created = datetime.now()
+    date_modified = datetime.now()
+    authors = factory.List([factory.SubFactory(UserFactory), factory.fuzzy.FuzzyInteger(1,5)])
+    likers = factory.List([factory.SubFactory(UserFactory), factory.fuzzy.FuzzyInteger(1,5)])
+    subscribers  = factory.List([factory.SubFactory(UserFactory), factory.fuzzy.FuzzyInteger(1,5)])
+    tags = None
