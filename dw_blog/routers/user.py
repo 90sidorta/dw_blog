@@ -33,7 +33,8 @@ async def get_user(
     user_id: UUID,
     user_service: UserService = Depends(get_user_service),
 ):
-    return await user_service.get(user_id=user_id)
+    user = await user_service.get(user_id=user_id)
+    return UserRead(**user.__dict__)
 
 
 @router.get(

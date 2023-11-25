@@ -18,7 +18,7 @@ class UserFactory(factory.Factory):
 
     id = factory.Faker("uuid4")
     nickname = factory.Sequence(lambda n: f"user_nickname_{n}")
-    user_type = factory.fuzzy.FuzzyChoice([img_type for img_type in UserType])
+    user_type = factory.fuzzy.FuzzyChoice([user_type for user_type in UserType])
     email = factory.Faker("company_email", locale="pl_PL")
     password = "$2b$12$oeSFt.wxV0piPYVUiDY.eeBaMfkJHwOt6BZOj4Wsno1kvkee0be6C"
     description = factory.fuzzy.FuzzyText(prefix='Desc', length=20)

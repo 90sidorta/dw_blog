@@ -84,6 +84,9 @@ class UserRead(SQLModel):
     user_type: UserType
     description: Optional[str]
 
+    class Config:
+        orm_mode = True
+
 
 class UserUpdate(SQLModel):
     user_type: Optional[UserType]

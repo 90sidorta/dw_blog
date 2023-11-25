@@ -59,8 +59,8 @@ class UserService:
         elif user_email:
             q = q.where(User.email == user_email)
 
-        result = await self.db_session.exec(q)
-        user = result.first()
+        result = await self.db_session.execute(q)
+        user = result.scalars().first()
 
         if user is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
