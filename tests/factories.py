@@ -41,7 +41,14 @@ class BlogFactory(factory.Factory):
     archived = False
     date_created = datetime.now()
     date_modified = datetime.now()
-    authors = factory.List([factory.SubFactory(UserFactory), factory.fuzzy.FuzzyInteger(1,5)])
-    likers = factory.List([factory.SubFactory(UserFactory), factory.fuzzy.FuzzyInteger(1,5)])
-    subscribers  = factory.List([factory.SubFactory(UserFactory), factory.fuzzy.FuzzyInteger(1,5)])
-    tags = None
+    name = factory.Sequence(lambda n: f"blog_name_{n}")
+    authors = factory.List([factory.SubFactory(UserFactory)])
+    likers = factory.List([factory.SubFactory(UserFactory)])
+    subscribers  = factory.List([factory.SubFactory(UserFactory)])
+    tags = []
+
+
+
+# factory.fuzzy.FuzzyInteger(1,5)
+# factory.fuzzy.FuzzyInteger(1,5)
+# factory.fuzzy.FuzzyInteger(1,5)

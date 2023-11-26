@@ -1,4 +1,5 @@
 import asyncio
+from uuid import UUID
 from typing import Generator, AsyncGenerator
 
 import pytest
@@ -11,9 +12,11 @@ from sqlalchemy_utils import create_database, database_exists
 
 from dw_blog.config import Settings
 from dw_blog.db.db import get_session
-from tests.factories import UserFactory, ADMIN_ID, ADMIN_EMAIL
+from tests.factories import UserFactory, ADMIN_ID, ADMIN_EMAIL, BlogFactory
 from dw_blog.models.user import User
 from dw_blog.models.common import UserType
+from dw_blog.models.blog import BlogAuthors
+from dw_blog.utils.auth import create_access_token
 from main import app
 
 settings = Settings()
@@ -57,6 +60,16 @@ def async_session_maker() -> sessionmaker:
 @pytest.fixture
 async def async_session(async_session_maker) -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
+        exists = await session.get(User, ADMIN_ID)
+        if not exists:
+            user = UserFactory(
+                id=ADMIN_ID,
+                email=ADMIN_EMAIL,
+                user_type=UserType.admin
+            )
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
         yield session
 
 
@@ -80,25 +93,11 @@ def event_loop() -> Generator:  # noqa: indirect usage
 
 
 @pytest.fixture
-async def add_admin_user(async_session: AsyncSession) -> User:
-    # Add admin user
-    user = UserFactory(id=ADMIN_ID, email=ADMIN_EMAIL, user_type=UserType.admin)
-    async_session.add(user)
-    await async_session.commit()
-    await async_session.refresh(user)
-    return user
-
-
-@pytest.fixture
-async def access_token(
-    async_client: AsyncClient,
-):
-    response = await async_client.post(
-        f"/auth/token",
-        data={"username": ADMIN_EMAIL, "password": "testtest2!", "grant_type": "password"},
-        headers={"content-type": "application/x-www-form-urlencoded"},
+async def access_token():
+    return create_access_token(
+        user_id=ADMIN_ID,
+        user_type=UserType.admin,
     )
-    return response.json()["access_token"]
 
 
 def _add_user(db_session, **kwargs):
@@ -106,3 +105,17 @@ def _add_user(db_session, **kwargs):
     db_session.add(user)
     db_session.commit()
     return user
+
+
+async def _add_blog(db_session, **kwargs):
+    blog = BlogFactory(**kwargs)
+    db_session.add(blog)
+    await db_session.commit()
+    return blog
+
+
+async def _add_author_to_blog(db_session, user_id: UUID, blog_id: UUID):
+    blog_author = BlogAuthors(blog_id=blog_id, author_id=user_id)
+    db_session.add(blog_author)
+    await db_session.commit()
+    return blog_author
