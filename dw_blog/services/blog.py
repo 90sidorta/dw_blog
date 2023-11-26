@@ -106,8 +106,7 @@ class BlogService:
     async def get(
         self,
         blog_id: UUID,
-    ):
-    #  -> BlogRead:
+    )-> BlogRead:
         """Get blog data from database
         Args:
             blog_id (UUID): id of blog to be read
@@ -176,6 +175,7 @@ class BlogService:
         Returns:
             List[BlogRead]: List of blogs matching users criteria
         """
+        # TODO: Add info about all pages, current page and all records count
         # Check limit
         if limit > 20:
             raise PaginationLimitSurpassed()

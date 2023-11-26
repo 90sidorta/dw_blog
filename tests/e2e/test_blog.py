@@ -91,3 +91,35 @@ async def test__get_blog_404_nonexistent(
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+async def test__list_blogs_400_limit_passed(
+    async_client: AsyncClient,
+    async_session,
+):
+    await _add_blog(async_session, name="Test blog1")
+    await _add_blog(async_session, name="Test blog2")
+    await _add_blog(async_session, name="Test blog3")
+
+    response = await async_client.get(
+        f"/blogs?limit=30",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == "Pagination limit cannot be higher than 20!"
+
+
+async def test__list_blogs_400_limit_passed(
+    async_client: AsyncClient,
+    async_session,
+):
+    await _add_blog(async_session, name="Test blog1")
+    await _add_blog(async_session, name="Test blog2")
+    await _add_blog(async_session, name="Test blog3")
+
+    response = await async_client.get(
+        f"/blogs?limit=30",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == "Pagination limit cannot be higher than 20!"
