@@ -82,7 +82,7 @@ class BlogService:
             user_id=str(current_user["user_id"])
         )
         q = select(BlogAuthors).where(BlogAuthors.author_id == user.id)
-        result = await self.db_session.execute(q)
+        result = await self.db_session.exec(q)
         user_blogs = result.fetchall()
         if len(user_blogs) >= 3:
             raise BlogLimitReached()
@@ -119,7 +119,7 @@ class BlogService:
         """
         # Construct query with joined authors data
         q = get_single_blog_query(blog_id=blog_id)
-        result = await self.db_session.execute(q)
+        result = await self.db_session.exec(q)
         blog = result.first()
 
         # If no blog was found raise an exception
@@ -194,8 +194,8 @@ class BlogService:
         )
         # Execute queries with and without limit
         blogs_result = await self.db_session.exec(q_pag)
-        blogs = blogs_result.fetchall()
         all_result = await self.db_session.exec(q_all)
+        blogs = blogs_result.fetchall()
         total = all_result.fetchall()
 
         return blogs, len(total)

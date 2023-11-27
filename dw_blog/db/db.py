@@ -13,6 +13,7 @@ db_url = settings.DATABASE_URL
 engine = AsyncEngine(create_engine(db_url, echo=True, future=True))
 async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+
 async def init_db():
     async with engine.begin() as conn:
         # await conn.run_sync(SQLModel.metadata.drop_all)
@@ -20,19 +21,6 @@ async def init_db():
         pass
 
 
-
-async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker() as session:
-        yield session
-
-
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
         yield session
-
-# async def get_session() -> AsyncSession:
-#     async_session = sessionmaker(
-#         engine, class_=AsyncSession, expire_on_commit=False
-#     )
-#     async with async_session() as session:
-#         yield session

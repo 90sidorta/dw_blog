@@ -1,5 +1,6 @@
 import uuid
 import pytest
+from datetime import datetime, timedelta
 
 from httpx import AsyncClient
 from fastapi import status
@@ -109,17 +110,18 @@ async def test__list_blogs_400_limit_passed(
     assert response.json()["detail"] == "Pagination limit cannot be higher than 20!"
 
 
-async def test__list_blogs_400_limit_passed(
+async def test__list_blogs_200(
     async_client: AsyncClient,
     async_session,
 ):
-    await _add_blog(async_session, name="Test blog1")
-    await _add_blog(async_session, name="Test blog2")
-    await _add_blog(async_session, name="Test blog3")
+    current_datetime = datetime.now()
+    await _add_blog(async_session, name="Test blog1", date_created=current_datetime - timedelta(days=1))
+    await _add_blog(async_session, name="Test blog2", date_created=current_datetime - timedelta(days=2))
+    await _add_blog(async_session, name="Test blog3", date_created=current_datetime - timedelta(days=3))
 
     response = await async_client.get(
-        f"/blogs?limit=30",
+        f"/blogs?limit=1&offset=1&sort_by=date_created&sort_order=ascending",
     )
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json()["detail"] == "Pagination limit cannot be higher than 20!"
+    print(response.json())
+    assert response.status_code == status.HTTP_200_OK
