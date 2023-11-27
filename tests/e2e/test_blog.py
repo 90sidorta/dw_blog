@@ -369,3 +369,18 @@ async def test__add_blog_authors_404_nonexisting_blog(
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == f"Blog {blog_1} not found!"
+
+
+# ===add_blog_authors===
+# error add user to blog u are not author
+# ===remove_blog_authors===
+# 200, remove author from the blog
+# 400, delete last author
+# 400, delete user who is not author
+# 400, delete user from not your blog
+# ===add_blog_subscription===
+# ===remove_blog_subscription===
+# ===add_blog_like===
+# ===remove_blog_like===
+# ===update_blog===
+# ===delete_blog===

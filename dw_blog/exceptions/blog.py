@@ -57,6 +57,15 @@ class BlogAlreadyAuthor(HTTPException):
         )
 
 
+class BlogNotAuthor(HTTPException):
+    def __init__(self, author_id: UUID, blog_id: UUID):
+        detail=f"User {author_id} is not an author of blog {blog_id}!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
+
+
 class BlogNotYours(HTTPException):
     def __init__(self, blog_id: UUID):
         detail=f"Blog {blog_id} does not belong to you!",
@@ -77,7 +86,7 @@ class BlogLastAuthor(HTTPException):
 
 class BlogDeleteAuthorFail(HTTPException):
     def __init__(self):
-        detail="Can't delete the only author!",
+        detail="Failed to delete author!",
         super().__init__(
              status_code=status.HTTP_400_BAD_REQUEST,
              detail=detail,

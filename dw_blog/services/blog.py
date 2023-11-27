@@ -55,6 +55,7 @@ from dw_blog.exceptions.blog import (
     BlogNotLiked,
     BlogLikeFail,
     BlogUnlikeFail,
+    BlogNotAuthor,
 )
 
 
@@ -385,6 +386,17 @@ class BlogService:
             blog_id=blog_id,
             current_user=current_user,
         )
+
+        # Raise error if user not an author
+        if not await self.is_author_already(
+            author_id=remove_author_id,
+            blog_id=blog_id
+        ):
+            raise BlogNotAuthor(
+                blog_id=blog_id,
+                author_id=remove_author_id,
+            )
+
         # Check count of authors
         blog = await self.get(blog_id=blog_id)
         if len(blog.authors) == 1:
