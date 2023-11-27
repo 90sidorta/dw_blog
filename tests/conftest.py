@@ -101,10 +101,10 @@ async def access_token():
     )
 
 
-def _add_user(db_session, **kwargs):
+async def _add_user(db_session, **kwargs):
     user = UserFactory(**kwargs)
     db_session.add(user)
-    db_session.commit()
+    await db_session.commit()
     return user
 
 
