@@ -4,7 +4,7 @@ import pytest
 from httpx import AsyncClient
 from fastapi import status
 
-from tests.factories import ADMIN_EMAIL, ADMIN_ID
+from tests.factories import ADMIN_ID
 from tests.conftest import _add_blog, _add_author_to_blog
 
 @pytest.mark.asyncio

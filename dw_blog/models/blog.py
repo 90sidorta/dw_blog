@@ -1,8 +1,16 @@
 import uuid
 from typing import List, Optional
 from datetime import datetime
+from enum import Enum
 
 from sqlmodel import SQLModel, Field, Relationship
+
+from dw_blog.models.common import Sort, Pagination
+
+
+class SortBlogBy(str, Enum):
+    name = "name"
+    date_created = "date_created"
 
 
 class BlogAuthors(SQLModel, table=True):
@@ -105,3 +113,9 @@ class BlogReadList(SQLModel):
     name: str
     date_created: datetime
     date_modified: datetime
+
+
+class ReadBlogsPagination(SQLModel):
+    data: List[BlogReadList]
+    pagination: Pagination
+    sort: Sort

@@ -3,8 +3,8 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Depends, status
 
-from dw_blog.models.common import ErrorModel
-from dw_blog.models.blog import BlogCreate, BlogRead, BlogUpdate, BlogReadList
+from dw_blog.models.common import ErrorModel, Pagination, SortOrder, Sort
+from dw_blog.models.blog import BlogCreate, BlogRead, BlogUpdate, ReadBlogsPagination, SortBlogBy
 from dw_blog.services.blog import BlogService, get_blog_service
 from dw_blog.utils.auth import get_current_user
 from dw_blog.models.auth import AuthUser
@@ -60,7 +60,7 @@ async def get_blog(
 
 @router.get(
     "",
-    response_model=List[BlogReadList],
+    response_model=ReadBlogsPagination,
     status_code=status.HTTP_200_OK,
     responses={
         400: {"model": ErrorModel},
@@ -77,13 +77,29 @@ async def list_blogs(
     offset: int = 0,
     blog_name: Optional[str] = None,
     author_id: Optional[UUID] = None,
+    sort_order: SortOrder = SortOrder.ascending,
+    sort_by: SortBlogBy = SortBlogBy.date_created,
     blog_service: BlogService = Depends(get_blog_service),
 ):
-    return await blog_service.list(
+    listed_blogs, total = await blog_service.list(
         limit=limit,
         offset=offset,
         blog_name=blog_name,
         author_id=author_id,
+        sort_order=sort_order,
+        sort_by=sort_by,
+    )
+    return ReadBlogsPagination(
+        data=listed_blogs,
+        pagination=Pagination(
+            total_records=total,
+            limit=limit,
+            offset=offset,
+        ),
+        sort=Sort(
+            order=sort_order,
+            prop=sort_by,
+        ),
     )
 
 

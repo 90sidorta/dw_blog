@@ -4,6 +4,7 @@ from typing import Optional
 from sqlmodel import select, func, delete
 
 from dw_blog.models.user import User
+from dw_blog.models.common import SortOrder
 from dw_blog.models.tag import Tag
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.blog import (
@@ -11,6 +12,7 @@ from dw_blog.models.blog import (
     BlogAuthors,
     BlogLikes,
     BlogSubscribers,
+    SortBlogBy,
 )
 
 UserLiker = User.__table__.alias()
@@ -51,11 +53,17 @@ def get_listed_blogs_query(
     offset: int,
     blog_name: Optional[str] = None,
     author_id: Optional[UUID] = None,
+    sort_order: SortOrder = SortOrder.ascending,
+    sort_by: SortBlogBy = SortBlogBy.date_created,
 ):
+    # Create query
     q = select(Blog)
-    # Get blogs if user searches them on the basis of blog name
+
+    # Get records based on blog name
     if blog_name:
         q = q.where(Blog.name.ilike(f"%{blog_name}%"))
+
+    # Get records based on blog author id
     if author_id:
         q = (
             q
@@ -71,9 +79,25 @@ def get_listed_blogs_query(
             )
             .where(User.id == author_id)
         )
+
+    # Create sorting
+    if sort_by == SortBlogBy.date_created:
+        if sort_order == SortOrder.ascending:
+            q = q.order_by(Blog.date_created)
+        else:
+            q = q.order_by(Blog.date_created.desc())
+
+    if sort_by == SortBlogBy.name:
+        if sort_order == SortOrder.ascending:
+            q = q.order_by(Blog.name)
+        else:
+            q = q.order_by(Blog.name.desc())
+
+    # Assign query for count of all records
+    q_all = q
     # Add pagination to query
-    q = q.limit(limit).offset(offset)
-    return q
+    q_pag = q.limit(limit).offset(offset)
+    return q_pag, q_all
 
 
 def is_author_query(

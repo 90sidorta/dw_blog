@@ -13,12 +13,14 @@ from dw_blog.models.blog import (
     BlogAuthors,
     BlogAuthor,
     BlogTag,
-    BlogReadList,
+    SortBlogBy,
     BlogLikes,
     BlogLiker,
     BlogSubscriber,
     BlogSubscribers,
+    BlogReadList,
 )
+from dw_blog.models.common import SortOrder
 from dw_blog.db.db import get_session
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.user import UserType
@@ -162,7 +164,9 @@ class BlogService:
         offset: int,
         blog_name: Optional[str] = None,
         author_id: Optional[UUID] = None,
-    ) -> List[BlogReadList]:
+        sort_order: SortOrder = SortOrder.ascending,
+        sort_by: SortBlogBy = SortBlogBy.date_created,
+    ) -> Union[List[BlogReadList], int]:
         """Get listed blogs based - either all or based on authors_name or blog_name
         Args:
             limit [int]: up to how many results per page
@@ -175,23 +179,26 @@ class BlogService:
         Returns:
             List[BlogRead]: List of blogs matching users criteria
         """
-        # TODO: Add info about all pages, current page and all records count
         # Check limit
         if limit > 20:
             raise PaginationLimitSurpassed()
 
         # Create query
-        q = get_listed_blogs_query(
+        q_pag, q_all = get_listed_blogs_query(
             limit=limit,
             offset=offset,
             blog_name=blog_name,
             author_id=author_id,
+            sort_order=sort_order,
+            sort_by=sort_by,
         )
-        # Execute query
-        blogs_result = await self.db_session.exec(q)
+        # Execute queries with and without limit
+        blogs_result = await self.db_session.exec(q_pag)
         blogs = blogs_result.fetchall()
-        
-        return blogs
+        all_result = await self.db_session.exec(q_all)
+        total = all_result.fetchall()
+
+        return blogs, len(total)
 
     async def check_blog(
         self,
