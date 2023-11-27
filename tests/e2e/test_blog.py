@@ -208,3 +208,92 @@ async def test__list_blogs_200_search_author(
     assert response.status_code == status.HTTP_200_OK
     blogs = [blog["name"] for blog in response.json()["data"]]
     assert "Third" not in blogs
+
+
+async def test__list_blogs_200_search_name_nonexist(
+    async_client: AsyncClient,
+    async_session,
+):
+    await _add_blog(async_session, name="aaa")
+    await _add_blog(async_session, name="aaabbb")
+    await _add_blog(async_session, name="ccc")
+
+    response = await async_client.get(
+        f"/blogs?limit=10&offset=0&blog_name=zzz",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["data"]) == 0
+
+
+async def test__list_blogs_200_search_author_nonexist(
+    async_client: AsyncClient,
+    async_session,
+):
+    user_1 = await _add_user(async_session, nickname="User1")
+    user_2 = await _add_user(async_session, nickname="User2")
+    await _add_blog(async_session, name="First", authors=[user_1])
+    await _add_blog(async_session, name="Second", authors=[user_1])
+    await _add_blog(async_session, name="Third", authors=[user_1])
+
+    response = await async_client.get(
+        f"/blogs?limit=10&offset=0&author_id={user_2.id}",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()["data"]) == 0
+
+
+async def test__add_blog_authors_200(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    user_1 = await _add_user(async_session, nickname="User1")
+    blog_1 = await _add_blog(async_session, name="First")
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/add_authors",
+        json=[f"{user_1.id}"],
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    authors = [author["nickname"] for author in response.json()["authors"]]
+    assert "User1" in authors
+
+
+async def test__add_blog_authors_400_already_five_authors(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    user_1 = await _add_user(async_session, nickname="User1")
+    user_2 = await _add_user(async_session, nickname="User2")
+    user_3 = await _add_user(async_session, nickname="User3")
+    user_4 = await _add_user(async_session, nickname="User4")
+    user_5 = await _add_user(async_session, nickname="User5")
+    user_6 = await _add_user(async_session, nickname="User6")
+    blog_1 = await _add_blog(
+        async_session,
+        name="First",
+        authors=[
+            user_1, user_2, user_3, user_4, user_5
+        ]
+    )
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/add_authors",
+        json=[f"{user_6.id}"],
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == 'Blog can only have 5 authors!'
+
+
+# add_blog_authors
+# - add existing user to a blog users has 3 already
+# - add nonexisting users to a blog error
+# - add existing users to a nonexisting blog error
+# - add already added user to a blog
