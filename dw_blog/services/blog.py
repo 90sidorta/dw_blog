@@ -234,7 +234,7 @@ class BlogService:
         for author in blog.authors:
             authors_ids.append(author.author_id)
         if current_user["user_id"] not in authors_ids and current_user["user_type"] != UserType.admin:
-            raise BlogNotYours()
+            raise BlogNotYours(blog_id=blog_id)
 
     async def update(
         self,
@@ -408,8 +408,8 @@ class BlogService:
             remove_author_id=remove_author_id
         )
         try:
-            self.db_session.exec(q)
-            self.db_session.commit()
+            await self.db_session.exec(q)
+            await self.db_session.commit()
         except Exception:
             raise BlogDeleteAuthorFail()
 

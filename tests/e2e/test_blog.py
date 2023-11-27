@@ -282,6 +282,24 @@ async def test__add_blog_authors_400(
     assert response.json()["detail"][0]["detail"][0] == f"User {user_1.id} is already an author!"
 
 
+async def test__add_blog_authors_403_not_your_blog(
+    async_client: AsyncClient,
+    other_user_access_token,
+    async_session,
+):
+    user_1 = await _add_user(async_session)
+    blog_1 = await _add_blog(async_session)
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/add_authors",
+        json=[f"{user_1.id}"],
+        headers={"Authorization": f"Bearer {other_user_access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == f"Blog {blog_1.id} does not belong to you!"
+
+
 async def test__add_blog_authors_400_already_five_authors(
     async_client: AsyncClient,
     access_token,
@@ -371,13 +389,113 @@ async def test__add_blog_authors_404_nonexisting_blog(
     assert response.json()["detail"] == f"Blog {blog_1} not found!"
 
 
-# ===add_blog_authors===
-# error add user to blog u are not author
-# ===remove_blog_authors===
-# 200, remove author from the blog
-# 400, delete last author
-# 400, delete user who is not author
-# 400, delete user from not your blog
+async def test__remove_blog_author_200(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    user_1 = await _add_user(async_session)
+    user_2 = await _add_user(async_session)
+    blog_1 = await _add_blog(async_session, authors=[user_1, user_2])
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/remove_author?remove_author_id={user_2.id}",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    authors = [author["nickname"] for author in response.json()["authors"]]
+    assert user_2.nickname not in authors
+
+
+async def test__remove_blog_author_400_delete_last_author(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    user_1 = await _add_user(async_session)
+    blog_1 = await _add_blog(async_session, authors=[user_1])
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/remove_author?remove_author_id={user_1.id}",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == "Can't delete the only author!"
+
+
+async def test__remove_blog_author_400_delete_user_who_is_not_author(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    user_1 = await _add_user(async_session)
+    user_2 = await _add_user(async_session)
+    blog_1 = await _add_blog(async_session, authors=[user_1])
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/remove_author?remove_author_id={user_2.id}",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"User {user_2.id} is not an author of blog {blog_1.id}!"
+
+
+async def test__remove_blog_author_403_not_your_blog(
+    async_client: AsyncClient,
+    other_user_access_token,
+    async_session,
+):
+    user_1 = await _add_user(async_session)
+    user_2 = await _add_user(async_session)
+    blog_1 = await _add_blog(async_session, authors=[user_1, user_2])
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/remove_author?remove_author_id={user_2.id}",
+        headers={"Authorization": f"Bearer {other_user_access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == f"Blog {blog_1.id} does not belong to you!"
+
+
+async def test__remove_blog_author_422_nonexisting_user(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    user_1 = uuid.uuid4()
+    blog_1 = await _add_blog(async_session)
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/remove_author?remove_author_id={user_1}",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+async def test__remove_blog_author_404_nonexisting_blog(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    user_1 = await _add_user(async_session)
+    blog_1 = uuid.uuid4()
+
+    response = await async_client.post(
+        f"/blogs/{blog_1}/remove_author?remove_author_id={user_1.id}",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Blog {blog_1} not found!"
+
+
+
+
 # ===add_blog_subscription===
 # ===remove_blog_subscription===
 # ===add_blog_like===

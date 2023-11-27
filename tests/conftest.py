@@ -120,3 +120,12 @@ async def _add_author_to_blog(db_session, user_id: UUID, blog_id: UUID):
     db_session.add(blog_author)
     await db_session.commit()
     return blog_author
+
+
+@pytest.fixture
+async def other_user_access_token(async_session):
+    other_user = await _add_user(async_session, user_type=UserType.regular)
+    return create_access_token(
+        user_id=other_user.id,
+        user_type=UserType.regular,
+    )
