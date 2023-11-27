@@ -7,6 +7,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
 from dw_blog.models.user import User, UserRead
+from dw_blog.exceptions.user import UserNotFound
 from dw_blog.models.common import UserType
 from dw_blog.models.auth import AuthUser
 from dw_blog.db.db import get_session
@@ -44,7 +45,6 @@ class UserService:
             await self.db_session.commit()
             await self.db_session.refresh(user)
         except Exception as exc:
-            print(123, str(exc))
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to add user!")
         return user
 
@@ -55,15 +55,17 @@ class UserService:
     ):
         q = select(User)
         if user_id:
+            err_msg = f"User with id {user_id} not found"
             q = q.where(User.id == user_id)
         elif user_email:
+            err_msg = f"User with email {user_email} not found"
             q = q.where(User.email == user_email)
 
         result = await self.db_session.execute(q)
         user = result.scalars().first()
 
         if user is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+            raise UserNotFound(error_message=err_msg)
         
         return user
     

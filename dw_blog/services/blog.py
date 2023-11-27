@@ -34,6 +34,7 @@ from dw_blog.queries.blog import (
 )
 from dw_blog.services.user import UserService
 from dw_blog.exceptions.common import ListException, PaginationLimitSurpassed
+from dw_blog.exceptions.user import UserNotFound
 from dw_blog.exceptions.blog import (
     BlogLimitReached,
     BlogFailedAdd,
@@ -62,6 +63,22 @@ class BlogService:
         self.db_session = db_session
         self.user_service = UserService(db_session)
 
+    async def check_author_blogs(
+        self,
+        user_id: UUID
+    ):
+        """Checks if user has reachead limit of the blogs
+        Args:
+            user_id (UUID): id of the user
+        Raises:
+            BlogLimitReached: raised if user has already 3 blogs
+        """
+        q = select(BlogAuthors).where(BlogAuthors.author_id == user_id)
+        result = await self.db_session.exec(q)
+        user_blogs = result.fetchall()
+        if len(user_blogs) >= 3:
+            raise BlogLimitReached(user_id=user_id)
+
     async def create(
         self,
         current_user: AuthUser,
@@ -81,11 +98,7 @@ class BlogService:
         user = await self.user_service.get(
             user_id=str(current_user["user_id"])
         )
-        q = select(BlogAuthors).where(BlogAuthors.author_id == user.id)
-        result = await self.db_session.exec(q)
-        user_blogs = result.fetchall()
-        if len(user_blogs) >= 3:
-            raise BlogLimitReached()
+        await self.check_author_blogs(user.id)
 
         # Try to add new blog
         try:
@@ -124,7 +137,7 @@ class BlogService:
 
         # If no blog was found raise an exception
         if not blog:
-            raise BlogNotFound()
+            raise BlogNotFound(blog_id=blog_id)
 
         # Prepare and send response
         return BlogRead(
@@ -308,33 +321,42 @@ class BlogService:
 
         if len(blog_authors) > 5 or \
             (len(blog_authors) + len(add_author_ids) > 5):
-            raise BlogAuthorsLimitReached()
+            raise BlogAuthorsLimitReached(blog_id=blog_id)
         
-        # Check if user is already author and if yes, pass this id
-        already_authors = []
+        authors_errors = []
         add_authors = []
         for author_id in add_author_ids:
             author_already = await self.is_author_already(
                 blog_id=blog_id,
                 author_id=author_id
             )
-            # If user is not already an author, add him/her
+            try:
+                # Check if user exists
+                await self.user_service.get(user_id=author_id)
+                # Check if user already reached the limit of the blogs
+                await self.check_author_blogs(author_id)
+            except (BlogLimitReached, UserNotFound) as exc:
+                authors_errors.append(exc)
+
+            # Check if user is already author of this blog
             if author_already:
-                already_authors.append(BlogAlreadyAuthor(author_id=author_id))
+                authors_errors.append(BlogAlreadyAuthor(author_id=author_id))
+            # If user has less than 3 blogs and is not author of the specified blog
+            # add him/her as author
             else:
                 add_authors.append(BlogAuthors(blog_id=blog_id, author_id=author_id))
 
         # Commit changes
+        if len(authors_errors) > 0:
+            # Raise exception if there are any erros     
+            raise ListException(detail=authors_errors)
+
         try:
             for blog_author in add_authors:
                 self.db_session.add(blog_author)
             await self.db_session.commit()
         except Exception:
             raise BlogAuthorsAddFail()
-        
-        # Raise exception if some users were already blog authors
-        if len(already_authors) > 0:
-            raise ListException(detail=already_authors)
 
         blog_read = await self.get(blog_id=blog_id)
         return blog_read

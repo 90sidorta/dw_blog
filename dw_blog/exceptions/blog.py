@@ -4,8 +4,8 @@ from fastapi import HTTPException, status
 
 
 class BlogLimitReached(HTTPException):
-    def __init__(self):
-        detail="User already has 3 blogs!",
+    def __init__(self, user_id:UUID):
+        detail=f"User {user_id} already has 3 blogs!",
         super().__init__(
              status_code=status.HTTP_403_FORBIDDEN,
              detail=detail,
@@ -22,8 +22,8 @@ class BlogFailedAdd(HTTPException):
 
 
 class BlogNotFound(HTTPException):
-    def __init__(self):
-        detail="Blog not found!",
+    def __init__(self, blog_id: UUID):
+        detail=f"Blog {blog_id} not found!",
         super().__init__(
              status_code=status.HTTP_404_NOT_FOUND,
              detail=detail,
@@ -31,8 +31,8 @@ class BlogNotFound(HTTPException):
 
 
 class BlogAuthorsLimitReached(HTTPException):
-    def __init__(self):
-        detail="Blog can only have 5 authors!",
+    def __init__(self, blog_id: UUID):
+        detail=f"Blog {blog_id} can only have 5 authors!",
         super().__init__(
              status_code=status.HTTP_400_BAD_REQUEST,
              detail=detail,

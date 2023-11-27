@@ -64,7 +64,7 @@ async def test__add_blog_403_more_than_three_blogs(
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.json()["detail"] == "User already has 3 blogs!"
+    assert response.json()["detail"] == f"User {ADMIN_ID} already has 3 blogs!"
 
 
 async def test__get_blog_200(
@@ -83,7 +83,6 @@ async def test__get_blog_200(
 
 async def test__get_blog_404_nonexistent(
     async_client: AsyncClient,
-    async_session,
 ):
     blog_1 = uuid.uuid4()
 
@@ -92,6 +91,7 @@ async def test__get_blog_404_nonexistent(
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Blog {blog_1} not found!"
 
 
 async def test__list_blogs_400_limit_passed(
@@ -230,8 +230,8 @@ async def test__list_blogs_200_search_author_nonexist(
     async_client: AsyncClient,
     async_session,
 ):
-    user_1 = await _add_user(async_session, nickname="User1")
-    user_2 = await _add_user(async_session, nickname="User2")
+    user_1 = await _add_user(async_session, nickname="UserOne")
+    user_2 = await _add_user(async_session, nickname="UserTwo")
     await _add_blog(async_session, name="First", authors=[user_1])
     await _add_blog(async_session, name="Second", authors=[user_1])
     await _add_blog(async_session, name="Third", authors=[user_1])
@@ -249,8 +249,8 @@ async def test__add_blog_authors_200(
     access_token,
     async_session,
 ):
-    user_1 = await _add_user(async_session, nickname="User1")
-    blog_1 = await _add_blog(async_session, name="First")
+    user_1 = await _add_user(async_session)
+    blog_1 = await _add_blog(async_session)
 
     response = await async_client.post(
         f"/blogs/{blog_1.id}/add_authors",
@@ -260,7 +260,26 @@ async def test__add_blog_authors_200(
 
     assert response.status_code == status.HTTP_200_OK
     authors = [author["nickname"] for author in response.json()["authors"]]
-    assert "User1" in authors
+    assert user_1.nickname in authors
+
+
+async def test__add_blog_authors_400(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    user_1 = await _add_user(async_session)
+    blog_1 = await _add_blog(async_session, authors=[user_1])
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/add_authors",
+        json=[f"{user_1.id}"],
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.json()["detail"][0]["status_code"] == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"][0]["detail"][0] == f"User {user_1.id} is already an author!"
 
 
 async def test__add_blog_authors_400_already_five_authors(
@@ -268,12 +287,12 @@ async def test__add_blog_authors_400_already_five_authors(
     access_token,
     async_session,
 ):
-    user_1 = await _add_user(async_session, nickname="User1")
-    user_2 = await _add_user(async_session, nickname="User2")
-    user_3 = await _add_user(async_session, nickname="User3")
-    user_4 = await _add_user(async_session, nickname="User4")
-    user_5 = await _add_user(async_session, nickname="User5")
-    user_6 = await _add_user(async_session, nickname="User6")
+    user_1 = await _add_user(async_session)
+    user_2 = await _add_user(async_session)
+    user_3 = await _add_user(async_session)
+    user_4 = await _add_user(async_session)
+    user_5 = await _add_user(async_session)
+    user_6 = await _add_user(async_session)
     blog_1 = await _add_blog(
         async_session,
         name="First",
@@ -289,11 +308,64 @@ async def test__add_blog_authors_400_already_five_authors(
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json()["detail"] == 'Blog can only have 5 authors!'
+    assert response.json()["detail"] == f'Blog {blog_1.id} can only have 5 authors!'
 
 
-# add_blog_authors
-# - add existing user to a blog users has 3 already
-# - add nonexisting users to a blog error
-# - add existing users to a nonexisting blog error
-# - add already added user to a blog
+async def test__add_blog_authors_422_already_three_blogs(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    user_1 = await _add_user(async_session, name="more_than_3")
+    blog_1 = await _add_blog(async_session, authors=[user_1])
+    blog_2 = await _add_blog(async_session, authors=[user_1])
+    blog_3 = await _add_blog(async_session, authors=[user_1])
+    blog_4 = await _add_blog(async_session)
+
+    response = await async_client.post(
+        f"/blogs/{blog_4.id}/add_authors",
+        json=[f"{user_1.id}"],
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.json()["detail"][0]["status_code"] == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"][0]["detail"][0] == f"User {user_1.id} already has 3 blogs!"
+
+
+async def test__add_blog_authors_422_nonexisting_user(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    user_1 = uuid.uuid4()
+    blog_1 = await _add_blog(async_session)
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/add_authors",
+        json=[f"{user_1}"],
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.json()["detail"][0]["status_code"] == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"][0]["detail"][0] == f"User with id {user_1} not found"
+
+
+async def test__add_blog_authors_404_nonexisting_blog(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    user_1 = await _add_user(async_session)
+    user_2 = await _add_user(async_session)
+    blog_1 = uuid.uuid4()
+
+    response = await async_client.post(
+        f"/blogs/{blog_1}/add_authors",
+        json=[f"{user_1.id}", f"{user_2.id}"],
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Blog {blog_1} not found!"
