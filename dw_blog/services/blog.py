@@ -65,10 +65,7 @@ class BlogService:
         self.db_session = db_session
         self.user_service = UserService(db_session)
 
-    async def check_author_blogs(
-        self,
-        user_id: UUID
-    ):
+    async def check_author_blogs(self, user_id: UUID):
         """Checks if user has reachead limit of the blogs
         Args:
             user_id (UUID): id of the user
@@ -97,19 +94,12 @@ class BlogService:
             BlogRead: Created blog with author data
         """
         # Check if user has less than 3 blogs
-        user = await self.user_service.get(
-            user_id=str(current_user["user_id"])
-        )
+        user = await self.user_service.get(user_id=str(current_user["user_id"]))
         await self.check_author_blogs(user.id)
 
         # Try to add new blog
         try:
-            blog = Blog(
-                name=name,
-                date_created=datetime.now(),
-                date_modified=datetime.now(),
-                authors=[user]
-            )
+            blog = Blog(name=name, date_created=datetime.now(), date_modified=datetime.now(), authors=[user])
             self.db_session.add(blog)
             await self.db_session.commit()
             await self.db_session.refresh(blog)
@@ -123,7 +113,7 @@ class BlogService:
     async def get(
         self,
         blog_id: UUID,
-    )-> BlogRead:
+    ) -> BlogRead:
         """Get blog data from database
         Args:
             blog_id (UUID): id of blog to be read
@@ -148,30 +138,25 @@ class BlogService:
             date_created=blog.date_created,
             date_modified=blog.date_modified,
             authors=[
-                BlogAuthor(
-                    author_id=author_id,
-                    nickname=nickname
-                ) for author_id, nickname in zip(blog.author_id, blog.author_nickname)
+                BlogAuthor(author_id=author_id, nickname=nickname)
+                for author_id, nickname in zip(blog.author_id, blog.author_nickname)
             ],
-            tags=[
-                BlogTag(
-                    tag_id=tag_id,
-                    tag_name=tag_name
-                ) for tag_id, tag_name in zip(blog.tag_id, blog.tag_name)
-            ],
+            tags=[BlogTag(tag_id=tag_id, tag_name=tag_name) for tag_id, tag_name in zip(blog.tag_id, blog.tag_name)],
             likers=[
                 BlogLiker(
                     liker_id=liker_id,
                     nickname=nickname,
-                ) for liker_id, nickname in zip(blog.likers_id, blog.likers_nicknames)
+                )
+                for liker_id, nickname in zip(blog.likers_id, blog.likers_nicknames)
             ],
             subscribers=[
                 BlogSubscriber(
                     subscriber_id=subscriber_id,
                     nickname=nickname,
-                ) for subscriber_id, nickname in zip(blog.subscriber_id, blog.subscriber_nicknames)
+                )
+                for subscriber_id, nickname in zip(blog.subscriber_id, blog.subscriber_nicknames)
             ],
-            archived=blog.archived
+            archived=blog.archived,
         )
 
     async def list(
@@ -278,7 +263,7 @@ class BlogService:
     async def is_author_already(
         self,
         blog_id: UUID,
-        author_id:UUID,
+        author_id: UUID,
     ) -> Union[BlogAuthors, None]:
         """Checks if user is already an author of the blog
         Args:
@@ -322,17 +307,13 @@ class BlogService:
         blog_authors_result = await self.db_session.exec(q)
         blog_authors = blog_authors_result.fetchall()
 
-        if len(blog_authors) > 5 or \
-            (len(blog_authors) + len(add_author_ids) > 5):
+        if len(blog_authors) > 5 or (len(blog_authors) + len(add_author_ids) > 5):
             raise BlogAuthorsLimitReached(blog_id=blog_id)
-        
+
         authors_errors = []
         add_authors = []
         for author_id in add_author_ids:
-            author_already = await self.is_author_already(
-                blog_id=blog_id,
-                author_id=author_id
-            )
+            author_already = await self.is_author_already(blog_id=blog_id, author_id=author_id)
             try:
                 # Check if user exists
                 await self.user_service.get(user_id=author_id)
@@ -351,7 +332,7 @@ class BlogService:
 
         # Commit changes
         if len(authors_errors) > 0:
-            # Raise exception if there are any erros     
+            # Raise exception if there are any erros
             raise ListException(detail=authors_errors)
 
         try:
@@ -390,10 +371,7 @@ class BlogService:
         )
 
         # Raise error if user not an author
-        if not await self.is_author_already(
-            author_id=remove_author_id,
-            blog_id=blog_id
-        ):
+        if not await self.is_author_already(author_id=remove_author_id, blog_id=blog_id):
             raise BlogNotAuthor(
                 blog_id=blog_id,
                 author_id=remove_author_id,
@@ -405,17 +383,14 @@ class BlogService:
             raise BlogLastAuthor()
 
         # Remove author from the blog
-        q = delete_author_query(
-            blog_id=blog_id,
-            remove_author_id=remove_author_id
-        )
+        q = delete_author_query(blog_id=blog_id, remove_author_id=remove_author_id)
         try:
             await self.db_session.exec(q)
             await self.db_session.commit()
         except Exception:
             raise BlogDeleteAuthorFail()
 
-        return await self.get(blog_id=blog_id) 
+        return await self.get(blog_id=blog_id)
 
     async def check_subscription(
         self,
@@ -438,7 +413,7 @@ class BlogService:
         result = await self.db_session.exec(q)
         already_subscribes = result.first()
         return already_subscribes
-    
+
     async def check_like(
         self,
         blog_id: UUID,
@@ -453,10 +428,7 @@ class BlogService:
             Union[BlogLikes, None]: Either there is
             a like for this blog and user or not
         """
-        q = check_like_query(
-            blog_id=blog_id,
-            current_user=current_user
-        )
+        q = check_like_query(blog_id=blog_id, current_user=current_user)
         result = await self.db_session.exec(q)
         already_likes = result.first()
         return already_likes
@@ -485,19 +457,13 @@ class BlogService:
             raise BlogArchived(blog_id=blog_id)
 
         # Check if user is not already a subscriber
-        already_subscribes = await self.check_subscription(
-            blog_id=blog_id,
-            current_user=current_user
-        )
+        already_subscribes = await self.check_subscription(blog_id=blog_id, current_user=current_user)
         if already_subscribes:
             raise BlogAlreadySubscribed(blog_id=blog_id)
-        
+
         # Try to add new subscription
         try:
-            subscription = BlogSubscribers(
-                blog_id=blog_id,
-                subscriber_id=current_user["user_id"]
-            )
+            subscription = BlogSubscribers(blog_id=blog_id, subscriber_id=current_user["user_id"])
             self.db_session.add(subscription)
             await self.db_session.commit()
             await self.db_session.refresh(subscription)
@@ -526,13 +492,10 @@ class BlogService:
         # Check if blog exists
         await self.get(blog_id=blog_id)
         # Check if user is not already a subscriber
-        already_subscribes = await self.check_subscription(
-            blog_id=blog_id,
-            current_user=current_user
-        )
+        already_subscribes = await self.check_subscription(blog_id=blog_id, current_user=current_user)
         if not already_subscribes:
             raise BlogNotSubscribed(blog_id=blog_id)
-        
+
         # Delete subscription
         try:
             await self.db_session.delete(already_subscribes)
@@ -562,19 +525,13 @@ class BlogService:
             raise BlogArchived(blog_id=blog_id)
 
         # Check if user is not already a liker
-        already_likes = await self.check_like(
-            blog_id=blog_id,
-            current_user=current_user
-        )
+        already_likes = await self.check_like(blog_id=blog_id, current_user=current_user)
         if already_likes:
             raise BlogAlreadyLiked(blog_id=blog_id)
-        
+
         # Try to add new subscription
         try:
-            like = BlogLikes(
-                blog_id=blog_id,
-                liker_id=current_user["user_id"]
-            )
+            like = BlogLikes(blog_id=blog_id, liker_id=current_user["user_id"])
             self.db_session.add(like)
             await self.db_session.commit()
             await self.db_session.refresh(like)
@@ -602,13 +559,10 @@ class BlogService:
         # Check if blog exists
         await self.get(blog_id=blog_id)
         # Check if user is not already a subscriber
-        already_likes = await self.check_like(
-            blog_id=blog_id,
-            current_user=current_user
-        )
+        already_likes = await self.check_like(blog_id=blog_id, current_user=current_user)
         if not already_likes:
             raise BlogNotLiked(blog_id=blog_id)
-        
+
         # Delete subscription
         try:
             await self.db_session.delete(already_likes)
@@ -642,6 +596,7 @@ class BlogService:
             self.db_session.commit()
         except Exception:
             raise BlogDeleteFail()
+
 
 async def get_blog_service(session: AsyncSession = Depends(get_session)):
     yield BlogService(session)

@@ -9,31 +9,12 @@ from dw_blog.routers.tag import router as tag_router
 
 app = FastAPI()
 
-app.include_router(
-    user_router,
-    tags=["Users"],
-    prefix="/users"
-)
-app.include_router(
-    auth_router,
-    tags=["Auth"],
-    prefix="/auth"
-)
-app.include_router(
-    post_router,
-    tags=["Posts"],
-    prefix="/posts"
-)
-app.include_router(
-    blog_router,
-    tags=["Blogs"],
-    prefix="/blogs"
-)
-app.include_router(
-    tag_router,
-    tags=["Tags"],
-    prefix="/tags"
-)
+app.include_router(user_router, tags=["Users"], prefix="/users")
+app.include_router(auth_router, tags=["Auth"], prefix="/auth")
+app.include_router(post_router, tags=["Posts"], prefix="/posts")
+app.include_router(blog_router, tags=["Blogs"], prefix="/blogs")
+app.include_router(tag_router, tags=["Tags"], prefix="/tags")
+
 
 @app.on_event("startup")
 async def on_startup():

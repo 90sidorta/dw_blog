@@ -67,17 +67,8 @@ def get_listed_blogs_query(
     # Get records based on blog author id
     if author_id:
         q = (
-            q
-            .join(
-                BlogAuthors,
-                onclause=BlogAuthors.blog_id == Blog.id,
-                isouter=True
-            )
-            .join(
-                User,
-                onclause=User.id == BlogAuthors.author_id,
-                isouter=True
-            )
+            q.join(BlogAuthors, onclause=BlogAuthors.blog_id == Blog.id, isouter=True)
+            .join(User, onclause=User.id == BlogAuthors.author_id, isouter=True)
             .where(User.id == author_id)
         )
 
@@ -105,12 +96,9 @@ def is_author_query(
     blog_id: UUID,
     author_id: UUID,
 ):
-    q = (
-        select(BlogAuthors)
-        .where(
-            BlogAuthors.blog_id == blog_id,
-            BlogAuthors.author_id == author_id,
-        )
+    q = select(BlogAuthors).where(
+        BlogAuthors.blog_id == blog_id,
+        BlogAuthors.author_id == author_id,
     )
     return q
 
@@ -119,12 +107,9 @@ def delete_author_query(
     remove_author_id: UUID,
     blog_id: UUID,
 ):
-    q = (
-        delete(BlogAuthors)
-        .where(
-            (BlogAuthors.author_id == remove_author_id),
-            (BlogAuthors.blog_id == blog_id),
-        )
+    q = delete(BlogAuthors).where(
+        (BlogAuthors.author_id == remove_author_id),
+        (BlogAuthors.blog_id == blog_id),
     )
     return q
 
@@ -133,12 +118,9 @@ def check_subscription_query(
     blog_id: UUID,
     current_user: AuthUser,
 ):
-    q = (
-        select(BlogSubscribers)
-        .where(
-            BlogSubscribers.blog_id == blog_id,
-            BlogSubscribers.subscriber_id == current_user["user_id"],
-        )
+    q = select(BlogSubscribers).where(
+        BlogSubscribers.blog_id == blog_id,
+        BlogSubscribers.subscriber_id == current_user["user_id"],
     )
     return q
 
@@ -147,11 +129,8 @@ def check_like_query(
     blog_id: UUID,
     current_user: AuthUser,
 ):
-    q = (
-        select(BlogLikes)
-        .where(
-            BlogLikes.blog_id == blog_id,
-            BlogLikes.liker_id == current_user["user_id"],
-        )
+    q = select(BlogLikes).where(
+        BlogLikes.blog_id == blog_id,
+        BlogLikes.liker_id == current_user["user_id"],
     )
     return q

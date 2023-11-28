@@ -40,11 +40,7 @@ class BlogBase(SQLModel):
 
 
 class Blog(BlogBase, table=True):
-    id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
-        primary_key=True,
-        index=True
-    )
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     authors: List["User"] = Relationship(
         back_populates="blogs",
         link_model=BlogAuthors,

@@ -63,11 +63,7 @@ async def async_session(async_session_maker) -> AsyncGenerator[AsyncSession, Non
     async with async_session_maker() as session:
         exists = await session.get(User, ADMIN_ID)
         if not exists:
-            user = UserFactory(
-                id=ADMIN_ID,
-                email=ADMIN_EMAIL,
-                user_type=UserType.admin
-            )
+            user = UserFactory(id=ADMIN_ID, email=ADMIN_EMAIL, user_type=UserType.admin)
             session.add(user)
             await session.commit()
             await session.refresh(user)

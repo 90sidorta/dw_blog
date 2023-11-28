@@ -4,189 +4,189 @@ from fastapi import HTTPException, status
 
 
 class BlogLimitReached(HTTPException):
-    def __init__(self, user_id:UUID):
-        detail=f"User {user_id} already has 3 blogs!",
+    def __init__(self, user_id: UUID):
+        detail = (f"User {user_id} already has 3 blogs!",)
         super().__init__(
-             status_code=status.HTTP_403_FORBIDDEN,
-             detail=detail,
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=detail,
         )
 
 
 class BlogFailedAdd(HTTPException):
     def __init__(self):
-        detail="Failed to add blog!",
+        detail = ("Failed to add blog!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogNotFound(HTTPException):
     def __init__(self, blog_id: UUID):
-        detail=f"Blog {blog_id} not found!",
+        detail = (f"Blog {blog_id} not found!",)
         super().__init__(
-             status_code=status.HTTP_404_NOT_FOUND,
-             detail=detail,
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=detail,
         )
 
 
 class BlogAuthorsLimitReached(HTTPException):
     def __init__(self, blog_id: UUID):
-        detail=f"Blog {blog_id} can only have 5 authors!",
+        detail = (f"Blog {blog_id} can only have 5 authors!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogAuthorsAddFail(HTTPException):
     def __init__(self):
-        detail="Failed to add authors to the blog!",
+        detail = ("Failed to add authors to the blog!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
-        
+
 
 class BlogAlreadyAuthor(HTTPException):
     def __init__(self, author_id: UUID):
-        detail=f"User {author_id} is already an author!",
+        detail = (f"User {author_id} is already an author!",)
         super().__init__(
-             status_code=status.HTTP_403_FORBIDDEN,
-             detail=detail,
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=detail,
         )
 
 
 class BlogNotAuthor(HTTPException):
     def __init__(self, author_id: UUID, blog_id: UUID):
-        detail=f"User {author_id} is not an author of blog {blog_id}!",
+        detail = (f"User {author_id} is not an author of blog {blog_id}!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogNotYours(HTTPException):
     def __init__(self, blog_id: UUID):
-        detail=f"Blog {blog_id} does not belong to you!",
+        detail = (f"Blog {blog_id} does not belong to you!",)
         super().__init__(
-             status_code=status.HTTP_403_FORBIDDEN,
-             detail=detail,
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=detail,
         )
 
 
 class BlogLastAuthor(HTTPException):
     def __init__(self):
-        detail="Can't delete the only author!",
+        detail = ("Can't delete the only author!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogDeleteAuthorFail(HTTPException):
     def __init__(self):
-        detail="Failed to delete author!",
+        detail = ("Failed to delete author!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogUpdateFail(HTTPException):
     def __init__(self):
-        detail="Failed to update blog!",
+        detail = ("Failed to update blog!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogDeleteFail(HTTPException):
     def __init__(self):
-        detail="Failed to delete blog!",
+        detail = ("Failed to delete blog!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogAlreadySubscribed(HTTPException):
     def __init__(self, blog_id: UUID):
-        detail=f"You already subscribed blog {blog_id}!",
+        detail = (f"You already subscribed blog {blog_id}!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogArchived(HTTPException):
     def __init__(self, blog_id: UUID):
-        detail=f"Blog {blog_id} is archived!",
+        detail = (f"Blog {blog_id} is archived!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogNotSubscribed(HTTPException):
     def __init__(self, blog_id: UUID):
-        detail=f"You don't subscribe blog {blog_id}!",
+        detail = (f"You don't subscribe blog {blog_id}!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogSubscribtionFail(HTTPException):
     def __init__(self):
-        detail="Failed to subscribe this blog!",
+        detail = ("Failed to subscribe this blog!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogUnsubscribtionFail(HTTPException):
     def __init__(self):
-        detail="Failed to unsubscribe this blog!",
+        detail = ("Failed to unsubscribe this blog!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogAlreadyLiked(HTTPException):
     def __init__(self, blog_id: UUID):
-        detail=f"You already liked blog {blog_id}!",
+        detail = (f"You already liked blog {blog_id}!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogNotLiked(HTTPException):
     def __init__(self, blog_id: UUID):
-        detail=f"You did not like blog {blog_id}!",
+        detail = (f"You did not like blog {blog_id}!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogLikeFail(HTTPException):
     def __init__(self):
-        detail="Failed to like this blog!",
+        detail = ("Failed to like this blog!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )
 
 
 class BlogUnlikeFail(HTTPException):
     def __init__(self):
-        detail="Failed to unlike this blog!",
+        detail = ("Failed to unlike this blog!",)
         super().__init__(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail=detail,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
         )

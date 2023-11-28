@@ -96,14 +96,15 @@ class TagService:
                 onclause=Blog.id == Tag.blog_id,
                 isouter=True,
             )
-            .where(Tag.id == tag_id))
+            .where(Tag.id == tag_id)
+        )
         result = await self.db_session.exec(q)
         tag = result.first()
 
         # Raise exception if no tag found
         if tag is None:
             raise TagNotFound(tag_id=tag_id)
-        
+
         return tag
 
     async def update(
@@ -164,6 +165,7 @@ class TagService:
             self.db_session.commit()
         except Exception:
             raise TagDeleteFail()
+
 
 async def get_tag_service(session: AsyncSession = Depends(get_session)):
     yield TagService(session)

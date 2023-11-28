@@ -12,15 +12,14 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '2be4b6709478'
-down_revision: Union[str, None] = 'a46c388b4b3f'
+revision: str = "2be4b6709478"
+down_revision: Union[str, None] = "a46c388b4b3f"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
     op.execute("ALTER TYPE usertype RENAME VALUE 'author' TO 'admin'")
-
 
 
 def downgrade() -> None:

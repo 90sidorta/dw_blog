@@ -21,7 +21,7 @@ class UserFactory(factory.Factory):
     user_type = factory.fuzzy.FuzzyChoice([user_type for user_type in UserType])
     email = factory.Faker("company_email", locale="pl_PL")
     password = "$2b$12$oeSFt.wxV0piPYVUiDY.eeBaMfkJHwOt6BZOj4Wsno1kvkee0be6C"
-    description = factory.fuzzy.FuzzyText(prefix='Desc', length=20)
+    description = factory.fuzzy.FuzzyText(prefix="Desc", length=20)
 
 
 class TagFactory(factory.Factory):
@@ -44,9 +44,8 @@ class BlogFactory(factory.Factory):
     name = factory.Sequence(lambda n: f"blog_name_{n}")
     authors = factory.List([factory.SubFactory(UserFactory)])
     likers = factory.List([factory.SubFactory(UserFactory)])
-    subscribers  = factory.List([factory.SubFactory(UserFactory)])
+    subscribers = factory.List([factory.SubFactory(UserFactory)])
     tags = []
-
 
 
 # factory.fuzzy.FuzzyInteger(1,5)

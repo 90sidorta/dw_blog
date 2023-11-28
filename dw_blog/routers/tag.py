@@ -29,10 +29,7 @@ async def add_tag(
     tag_service: TagService = Depends(get_tag_service),
     current_user: AuthUser = Depends(get_current_user),
 ):
-    return await tag_service.create(
-        current_user=current_user,
-        **request.dict()
-    )
+    return await tag_service.create(current_user=current_user, **request.dict())
 
 
 @router.get(

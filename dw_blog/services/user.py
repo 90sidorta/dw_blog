@@ -35,11 +35,7 @@ class UserService:
         hasshed_password = get_password_hash(password=password)
         try:
             user = User(
-                nickname=nickname,
-                user_type=user_type,
-                email=email,
-                password=hasshed_password,
-                description=description
+                nickname=nickname, user_type=user_type, email=email, password=hasshed_password, description=description
             )
             self.db_session.add(user)
             await self.db_session.commit()
@@ -66,9 +62,9 @@ class UserService:
 
         if user is None:
             raise UserNotFound(error_message=err_msg)
-        
+
         return user
-    
+
     async def list(
         self,
         users_ids: Optional[List[UUID]] = None,
@@ -108,10 +104,10 @@ class UserService:
 
         if user_type:
             user.user_type = user_type
-        
+
         if description:
             user.description = description
-        
+
         if new_email:
             if not confirm_email:
                 raise HTTPException(
@@ -124,7 +120,7 @@ class UserService:
                     detail="Emails have to match!",
                 )
             user.email = new_email
-        
+
         if new_password:
             if not confirm_password:
                 raise HTTPException(
@@ -172,6 +168,7 @@ class UserService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Failed to delete user!",
             )
+
 
 async def get_user_service(session: AsyncSession = Depends(get_session)):
     yield UserService(session)

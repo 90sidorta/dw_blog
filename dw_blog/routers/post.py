@@ -21,10 +21,7 @@ async def add_post(
     post_service: PostService = Depends(get_post_service),
     current_user: AuthUser = Depends(get_current_user),
 ):
-    return await post_service.create(
-        current_user=current_user,
-        **request.dict()
-    )
+    return await post_service.create(current_user=current_user, **request.dict())
 
 
 @router.get(

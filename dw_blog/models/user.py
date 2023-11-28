@@ -23,7 +23,7 @@ class UserBase(SQLModel):
         min_length=5,
         unique=True,
         nullable=False,
-        regex=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
+        regex=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
     )
     password: str = Field(nullable=False)
     description: Optional[str] = Field(
@@ -34,12 +34,8 @@ class UserBase(SQLModel):
 
 
 class User(UserBase, table=True):
-    __tablename__ = 'user'
-    id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
-        primary_key=True,
-        index=True
-    )
+    __tablename__ = "user"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     blogs: Optional[List[Blog]] = Relationship(
         back_populates="authors",
         link_model=BlogAuthors,
@@ -60,7 +56,7 @@ class UserCreate(UserBase):
         max_length=100,
         min_length=5,
         nullable=False,
-        regex=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
+        regex=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
     )
 
     class Config:
@@ -91,22 +87,23 @@ class UserUpdate(SQLModel):
         nullable=True,
         max_length=1000,
         min_length=5,
-    ) 
+    )
     new_email: Optional[str] = Field(
         max_length=100,
         min_length=5,
         unique=True,
         nullable=True,
-        regex=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
+        regex=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
     )
     confirm_email: Optional[str] = Field(
         max_length=100,
         min_length=5,
         nullable=True,
-        regex=r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
+        regex=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
     )
     new_password: Optional[str] = Field(nullable=True)
     confirm_password: Optional[str] = Field(nullable=True, min_length=5, max_length=100)
+
     class Config:
         anystr_strip_whitespace = True
         schema_extra = {

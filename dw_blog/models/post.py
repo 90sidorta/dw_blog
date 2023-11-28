@@ -22,11 +22,7 @@ class PostBase(SQLModel):
 
 
 class Post(PostBase, table=True):
-    id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
-        primary_key=True,
-        index=True
-    )
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     comments: List["Comment"] = Relationship(back_populates="post")
     tags: List[Tag] = Relationship(
         back_populates="posts",
@@ -44,6 +40,7 @@ class PostCreate(SQLModel):
 
 class PostRead(Post):
     pass
+
 
 class PostUpdate(PostCreate):
     pass

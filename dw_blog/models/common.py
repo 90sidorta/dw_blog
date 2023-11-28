@@ -28,4 +28,3 @@ class Pagination(SQLModel):
 class Sort(SQLModel):
     order: SortOrder
     prop: str
-

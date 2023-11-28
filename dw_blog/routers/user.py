@@ -48,11 +48,7 @@ async def list_users(
     user_type: Optional[UserType] = None,
     user_service: UserService = Depends(get_user_service),
 ):
-    return await user_service.list(
-        users_ids=users_ids,
-        nickname=nickname,
-        user_type=user_type
-    )
+    return await user_service.list(users_ids=users_ids, nickname=nickname, user_type=user_type)
 
 
 @router.patch(

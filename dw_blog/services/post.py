@@ -24,9 +24,7 @@ class PostService:
         current_user: AuthUser,
         text: str,
     ) -> PostRead:
-        user = await self.user_service.get(
-            user_id=str(current_user["user_id"])
-        )
+        user = await self.user_service.get(user_id=str(current_user["user_id"]))
         is_author = check_if_admin(user.user_type)
 
         try:
@@ -58,11 +56,8 @@ class PostService:
         post = result.first()
 
         if post is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Post not found!"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found!")
+
         return post
 
     # async def list(
@@ -100,10 +95,10 @@ class PostService:
 
     #     if user_type:
     #         user.user_type = user_type
-        
+
     #     if description:
     #         user.description = description
-        
+
     #     if new_email:
     #         if not confirm_email:
     #             raise HTTPException(
@@ -116,7 +111,7 @@ class PostService:
     #                 detail="Emails have to match!",
     #             )
     #         user.email = new_email
-        
+
     #     if new_password:
     #         if not confirm_password:
     #             raise HTTPException(
@@ -155,6 +150,7 @@ class PostService:
     #             status_code=status.HTTP_404_NOT_FOUND,
     #             detail="Failed to delete user!",
     #         )
+
 
 async def get_post_service(session: AsyncSession = Depends(get_session)):
     yield PostService(session)

@@ -8,9 +8,8 @@ from fastapi import status
 from tests.factories import ADMIN_ID
 from tests.conftest import _add_blog, _add_author_to_blog, _add_user, _add_subscriber_to_blog, _add_likers_to_blog
 
+
 @pytest.mark.asyncio
-
-
 async def test__add_blog_200(
     async_client: AsyncClient,
     access_token,
@@ -18,9 +17,7 @@ async def test__add_blog_200(
     blog_name = "Blog test name"
 
     response = await async_client.post(
-        f"/blogs",
-        json={"name": blog_name},
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs", json={"name": blog_name}, headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_201_CREATED
@@ -34,9 +31,7 @@ async def test__add_blog_422_short_name(
     blog_name = "Bl"
 
     response = await async_client.post(
-        f"/blogs",
-        json={"name": blog_name},
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs", json={"name": blog_name}, headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -58,9 +53,7 @@ async def test__add_blog_403_more_than_three_blogs(
     blog_name = "Blog test name"
 
     response = await async_client.post(
-        f"/blogs",
-        json={"name": blog_name},
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs", json={"name": blog_name}, headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -253,9 +246,7 @@ async def test__add_blog_authors_200(
     blog_1 = await _add_blog(async_session)
 
     response = await async_client.post(
-        f"/blogs/{blog_1.id}/add_authors",
-        json=[f"{user_1.id}"],
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1.id}/add_authors", json=[f"{user_1.id}"], headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -272,9 +263,7 @@ async def test__add_blog_authors_400(
     blog_1 = await _add_blog(async_session, authors=[user_1])
 
     response = await async_client.post(
-        f"/blogs/{blog_1.id}/add_authors",
-        json=[f"{user_1.id}"],
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1.id}/add_authors", json=[f"{user_1.id}"], headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -293,7 +282,7 @@ async def test__add_blog_authors_403_not_your_blog(
     response = await async_client.post(
         f"/blogs/{blog_1.id}/add_authors",
         json=[f"{user_1.id}"],
-        headers={"Authorization": f"Bearer {other_user_access_token}"}
+        headers={"Authorization": f"Bearer {other_user_access_token}"},
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -311,22 +300,14 @@ async def test__add_blog_authors_400_already_five_authors(
     user_4 = await _add_user(async_session)
     user_5 = await _add_user(async_session)
     user_6 = await _add_user(async_session)
-    blog_1 = await _add_blog(
-        async_session,
-        name="First",
-        authors=[
-            user_1, user_2, user_3, user_4, user_5
-        ]
-    )
+    blog_1 = await _add_blog(async_session, name="First", authors=[user_1, user_2, user_3, user_4, user_5])
 
     response = await async_client.post(
-        f"/blogs/{blog_1.id}/add_authors",
-        json=[f"{user_6.id}"],
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1.id}/add_authors", json=[f"{user_6.id}"], headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json()["detail"] == f'Blog {blog_1.id} can only have 5 authors!'
+    assert response.json()["detail"] == f"Blog {blog_1.id} can only have 5 authors!"
 
 
 async def test__add_blog_authors_422_already_three_blogs(
@@ -341,9 +322,7 @@ async def test__add_blog_authors_422_already_three_blogs(
     blog_4 = await _add_blog(async_session)
 
     response = await async_client.post(
-        f"/blogs/{blog_4.id}/add_authors",
-        json=[f"{user_1.id}"],
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_4.id}/add_authors", json=[f"{user_1.id}"], headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -360,9 +339,7 @@ async def test__add_blog_authors_422_nonexisting_user(
     blog_1 = await _add_blog(async_session)
 
     response = await async_client.post(
-        f"/blogs/{blog_1.id}/add_authors",
-        json=[f"{user_1}"],
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1.id}/add_authors", json=[f"{user_1}"], headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -382,7 +359,7 @@ async def test__add_blog_authors_404_nonexisting_blog(
     response = await async_client.post(
         f"/blogs/{blog_1}/add_authors",
         json=[f"{user_1.id}", f"{user_2.id}"],
-        headers={"Authorization": f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {access_token}"},
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -400,7 +377,7 @@ async def test__remove_blog_author_200(
 
     response = await async_client.post(
         f"/blogs/{blog_1.id}/remove_author?remove_author_id={user_2.id}",
-        headers={"Authorization": f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {access_token}"},
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -418,7 +395,7 @@ async def test__remove_blog_author_400_delete_last_author(
 
     response = await async_client.post(
         f"/blogs/{blog_1.id}/remove_author?remove_author_id={user_1.id}",
-        headers={"Authorization": f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {access_token}"},
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -436,7 +413,7 @@ async def test__remove_blog_author_400_delete_user_who_is_not_author(
 
     response = await async_client.post(
         f"/blogs/{blog_1.id}/remove_author?remove_author_id={user_2.id}",
-        headers={"Authorization": f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {access_token}"},
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -454,7 +431,7 @@ async def test__remove_blog_author_403_not_your_blog(
 
     response = await async_client.post(
         f"/blogs/{blog_1.id}/remove_author?remove_author_id={user_2.id}",
-        headers={"Authorization": f"Bearer {other_user_access_token}"}
+        headers={"Authorization": f"Bearer {other_user_access_token}"},
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -471,7 +448,7 @@ async def test__remove_blog_author_422_nonexisting_user(
 
     response = await async_client.post(
         f"/blogs/{blog_1.id}/remove_author?remove_author_id={user_1}",
-        headers={"Authorization": f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {access_token}"},
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -487,7 +464,7 @@ async def test__remove_blog_author_404_nonexisting_blog(
 
     response = await async_client.post(
         f"/blogs/{blog_1}/remove_author?remove_author_id={user_1.id}",
-        headers={"Authorization": f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {access_token}"},
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -502,8 +479,7 @@ async def test__add_blog_subscription_200(
     blog_1 = await _add_blog(async_session)
 
     response = await async_client.post(
-        f"/blogs/{blog_1.id}/subscribe",
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1.id}/subscribe", headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -520,8 +496,7 @@ async def test__add_blog_subscription_400_already_subscribed(
     await _add_subscriber_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
 
     response = await async_client.post(
-        f"/blogs/{blog_1.id}/subscribe",
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1.id}/subscribe", headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -535,8 +510,7 @@ async def test__add_blog_subscription_404_blog_nonexistent(
     blog_1 = uuid.uuid4()
 
     response = await async_client.post(
-        f"/blogs/{blog_1}/subscribe",
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1}/subscribe", headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -551,8 +525,7 @@ async def test__add_blog_subscription_400_blog_archived(
     blog_1 = await _add_blog(async_session, archived=True)
 
     response = await async_client.post(
-        f"/blogs/{blog_1.id}/subscribe",
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1.id}/subscribe", headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -568,8 +541,7 @@ async def test__remove_blog_subscription_200(
     await _add_subscriber_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
 
     response = await async_client.post(
-        f"/blogs/{blog_1.id}/unsubscribe",
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1.id}/unsubscribe", headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -585,8 +557,7 @@ async def test__remove_blog_subscription_400_not_subscribed(
     blog_1 = await _add_blog(async_session)
 
     response = await async_client.post(
-        f"/blogs/{blog_1.id}/unsubscribe",
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1.id}/unsubscribe", headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -600,8 +571,7 @@ async def test__remove_blog_subscription_404_blog_nonexistent(
     blog_1 = uuid.uuid4()
 
     response = await async_client.post(
-        f"/blogs/{blog_1}/unsubscribe",
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1}/unsubscribe", headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -615,10 +585,7 @@ async def test__add_blog_like_200(
 ):
     blog_1 = await _add_blog(async_session)
 
-    response = await async_client.post(
-        f"/blogs/{blog_1.id}/like",
-        headers={"Authorization": f"Bearer {access_token}"}
-    )
+    response = await async_client.post(f"/blogs/{blog_1.id}/like", headers={"Authorization": f"Bearer {access_token}"})
 
     assert response.status_code == status.HTTP_200_OK
     likers = [liker["liker_id"] for liker in response.json()["likers"]]
@@ -633,10 +600,7 @@ async def test__add_blog_like_400_already_liked(
     blog_1 = await _add_blog(async_session)
     await _add_likers_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
 
-    response = await async_client.post(
-        f"/blogs/{blog_1.id}/like",
-        headers={"Authorization": f"Bearer {access_token}"}
-    )
+    response = await async_client.post(f"/blogs/{blog_1.id}/like", headers={"Authorization": f"Bearer {access_token}"})
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == f"You already liked blog {blog_1.id}!"
@@ -648,10 +612,7 @@ async def test__add_blog_like_404_blog_nonexistent(
 ):
     blog_1 = uuid.uuid4()
 
-    response = await async_client.post(
-        f"/blogs/{blog_1}/like",
-        headers={"Authorization": f"Bearer {access_token}"}
-    )
+    response = await async_client.post(f"/blogs/{blog_1}/like", headers={"Authorization": f"Bearer {access_token}"})
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == f"Blog {blog_1} not found!"
@@ -664,10 +625,7 @@ async def test__add_blog_like_400_blog_archived(
 ):
     blog_1 = await _add_blog(async_session, archived=True)
 
-    response = await async_client.post(
-        f"/blogs/{blog_1.id}/like",
-        headers={"Authorization": f"Bearer {access_token}"}
-    )
+    response = await async_client.post(f"/blogs/{blog_1.id}/like", headers={"Authorization": f"Bearer {access_token}"})
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["detail"] == f"Blog {blog_1.id} is archived!"
@@ -682,8 +640,7 @@ async def test__remove_blog_like_200(
     await _add_likers_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
 
     response = await async_client.post(
-        f"/blogs/{blog_1.id}/unlike",
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1.id}/unlike", headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -699,8 +656,7 @@ async def test__remove_blog_like_400_not_liked(
     blog_1 = await _add_blog(async_session)
 
     response = await async_client.post(
-        f"/blogs/{blog_1.id}/unlike",
-        headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs/{blog_1.id}/unlike", headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -713,10 +669,7 @@ async def test__remove_blog_like_404_blog_nonexistent(
 ):
     blog_1 = uuid.uuid4()
 
-    response = await async_client.post(
-        f"/blogs/{blog_1}/unlike",
-        headers={"Authorization": f"Bearer {access_token}"}
-    )
+    response = await async_client.post(f"/blogs/{blog_1}/unlike", headers={"Authorization": f"Bearer {access_token}"})
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == f"Blog {blog_1} not found!"

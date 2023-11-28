@@ -10,9 +10,8 @@ from pydantic import ValidationError
 from dw_blog.exceptions.common import ListException
 
 
-generic_msg = (
-    "Server error! Try again and if problem persist, please contact your admin."
-)
+generic_msg = "Server error! Try again and if problem persist, please contact your admin."
+
 
 def parse_pydantic_msg(body: dict):
     return body[0]["msg"], body[0]["loc"][-1]
@@ -39,12 +38,14 @@ class RouteErrorHandler(APIRoute):
                 elif isinstance(exc, ListException):
                     return JSONResponse(
                         status_code=422,
-                        content={"detail": [
-                            {
-                                "status_code": e.status_code,
-                                "detail": e.detail,
-                            }
-                            for e in exc.detail]
+                        content={
+                            "detail": [
+                                {
+                                    "status_code": e.status_code,
+                                    "detail": e.detail,
+                                }
+                                for e in exc.detail
+                            ]
                         },
                     )
                 elif isinstance(exc, RequestValidationError):

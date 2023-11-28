@@ -8,9 +8,8 @@ from fastapi import status
 from tests.factories import ADMIN_TOKEN, ADMIN_ID
 from dw_blog.models.common import UserType
 
+
 @pytest.mark.asyncio
-
-
 async def test__get_user_200(
     async_client: AsyncClient,
     add_admin_user,
