@@ -130,8 +130,8 @@ class BlogArchived(HTTPException):
 
 
 class BlogNotSubscribed(HTTPException):
-    def __init__(self):
-        detail="You don't subscribe this blog!",
+    def __init__(self, blog_id: UUID):
+        detail=f"You don't subscribe blog {blog_id}!",
         super().__init__(
              status_code=status.HTTP_400_BAD_REQUEST,
              detail=detail,
@@ -157,8 +157,8 @@ class BlogUnsubscribtionFail(HTTPException):
 
 
 class BlogAlreadyLiked(HTTPException):
-    def __init__(self):
-        detail="You already liked this blog!",
+    def __init__(self, blog_id: UUID):
+        detail=f"You already liked blog {blog_id}!",
         super().__init__(
              status_code=status.HTTP_400_BAD_REQUEST,
              detail=detail,
@@ -166,8 +166,8 @@ class BlogAlreadyLiked(HTTPException):
 
 
 class BlogNotLiked(HTTPException):
-    def __init__(self):
-        detail="You did not like this blog!",
+    def __init__(self, blog_id: UUID):
+        detail=f"You did not like blog {blog_id}!",
         super().__init__(
              status_code=status.HTTP_400_BAD_REQUEST,
              detail=detail,

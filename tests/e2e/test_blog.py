@@ -6,7 +6,7 @@ from httpx import AsyncClient
 from fastapi import status
 
 from tests.factories import ADMIN_ID
-from tests.conftest import _add_blog, _add_author_to_blog, _add_user
+from tests.conftest import _add_blog, _add_author_to_blog, _add_user, _add_subscriber_to_blog, _add_likers_to_blog
 
 @pytest.mark.asyncio
 
@@ -517,10 +517,7 @@ async def test__add_blog_subscription_400_already_subscribed(
     async_session,
 ):
     blog_1 = await _add_blog(async_session)
-    await async_client.post(
-        f"/blogs/{blog_1.id}/subscribe",
-        headers={"Authorization": f"Bearer {access_token}"}
-    )
+    await _add_subscriber_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
 
     response = await async_client.post(
         f"/blogs/{blog_1.id}/subscribe",
@@ -551,7 +548,7 @@ async def test__add_blog_subscription_400_blog_archived(
     access_token,
     async_session,
 ):
-    blog_1 = await _add_blog(async_session, archived= True)
+    blog_1 = await _add_blog(async_session, archived=True)
 
     response = await async_client.post(
         f"/blogs/{blog_1.id}/subscribe",
@@ -562,9 +559,168 @@ async def test__add_blog_subscription_400_blog_archived(
     assert response.json()["detail"] == f"Blog {blog_1.id} is archived!"
 
 
+async def test__remove_blog_subscription_200(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    await _add_subscriber_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
 
-# ===remove_blog_subscription===
-# ===add_blog_like===
-# ===remove_blog_like===
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/unsubscribe",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    subscribers = [subscriber["subscriber_id"] for subscriber in response.json()["subscribers"]]
+    assert ADMIN_ID not in subscribers
+
+
+async def test__remove_blog_subscription_400_not_subscribed(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/unsubscribe",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"You don't subscribe blog {blog_1.id}!"
+
+
+async def test__remove_blog_subscription_404_blog_nonexistent(
+    async_client: AsyncClient,
+    access_token,
+):
+    blog_1 = uuid.uuid4()
+
+    response = await async_client.post(
+        f"/blogs/{blog_1}/unsubscribe",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Blog {blog_1} not found!"
+
+
+async def test__add_blog_like_200(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/like",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    likers = [liker["liker_id"] for liker in response.json()["likers"]]
+    assert ADMIN_ID in likers
+
+
+async def test__add_blog_like_400_already_liked(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    await _add_likers_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/like",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"You already liked blog {blog_1.id}!"
+
+
+async def test__add_blog_like_404_blog_nonexistent(
+    async_client: AsyncClient,
+    access_token,
+):
+    blog_1 = uuid.uuid4()
+
+    response = await async_client.post(
+        f"/blogs/{blog_1}/like",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Blog {blog_1} not found!"
+
+
+async def test__add_blog_like_400_blog_archived(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session, archived=True)
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/like",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"Blog {blog_1.id} is archived!"
+
+
+async def test__remove_blog_like_200(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    await _add_likers_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/unlike",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    likers = [liker["liker_id"] for liker in response.json()["likers"]]
+    assert ADMIN_ID not in likers
+
+
+async def test__remove_blog_like_400_not_liked(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/unlike",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"You did not like blog {blog_1.id}!"
+
+
+async def test__remove_blog_like_404_blog_nonexistent(
+    async_client: AsyncClient,
+    access_token,
+):
+    blog_1 = uuid.uuid4()
+
+    response = await async_client.post(
+        f"/blogs/{blog_1}/unlike",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Blog {blog_1} not found!"
+
+
 # ===update_blog===
 # ===delete_blog===

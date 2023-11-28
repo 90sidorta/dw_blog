@@ -16,7 +16,7 @@ from dw_blog.db.db import get_session
 from tests.factories import UserFactory, ADMIN_ID, ADMIN_EMAIL, BlogFactory
 from dw_blog.models.user import User
 from dw_blog.models.common import UserType
-from dw_blog.models.blog import BlogAuthors
+from dw_blog.models.blog import BlogAuthors, BlogSubscribers, BlogLikes
 from dw_blog.utils.auth import create_access_token
 from main import app
 
@@ -120,6 +120,20 @@ async def _add_author_to_blog(db_session, user_id: UUID, blog_id: UUID):
     db_session.add(blog_author)
     await db_session.commit()
     return blog_author
+
+
+async def _add_subscriber_to_blog(db_session, user_id: UUID, blog_id: UUID):
+    blog_subscriber = BlogSubscribers(blog_id=blog_id, subscriber_id=user_id)
+    db_session.add(blog_subscriber)
+    await db_session.commit()
+    return blog_subscriber
+
+
+async def _add_likers_to_blog(db_session, user_id: UUID, blog_id: UUID):
+    blog_liker = BlogLikes(blog_id=blog_id, liker_id=user_id)
+    db_session.add(blog_liker)
+    await db_session.commit()
+    return blog_liker
 
 
 @pytest.fixture

@@ -181,7 +181,7 @@ async def add_blog_subscription(
 
 
 @router.post(
-    "/{blog_id}/subscribe",
+    "/{blog_id}/unsubscribe",
     response_model=BlogRead,
     status_code=status.HTTP_200_OK,
     responses={

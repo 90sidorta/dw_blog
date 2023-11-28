@@ -523,18 +523,20 @@ class BlogService:
         Returns:
             BlogRead: blog data
         """
+        # Check if blog exists
+        await self.get(blog_id=blog_id)
         # Check if user is not already a subscriber
         already_subscribes = await self.check_subscription(
             blog_id=blog_id,
             current_user=current_user
         )
         if not already_subscribes:
-            raise BlogNotSubscribed()
+            raise BlogNotSubscribed(blog_id=blog_id)
         
         # Delete subscription
         try:
-            self.db_session.delete(already_subscribes)
-            self.db_session.commit()
+            await self.db_session.delete(already_subscribes)
+            await self.db_session.commit()
         except Exception:
             raise BlogUnsubscribtionFail()
         return await self.get(blog_id=blog_id)
@@ -554,25 +556,32 @@ class BlogService:
         Returns:
             BlogRead: blog data
         """
+        # Check if blog exists and is active
+        blog = await self.get(blog_id=blog_id)
+        if blog.archived:
+            raise BlogArchived(blog_id=blog_id)
+
         # Check if user is not already a liker
         already_likes = await self.check_like(
             blog_id=blog_id,
             current_user=current_user
         )
         if already_likes:
-            raise BlogAlreadyLiked()
+            raise BlogAlreadyLiked(blog_id=blog_id)
         
         # Try to add new subscription
         try:
             like = BlogLikes(
                 blog_id=blog_id,
-                subscriber_id=current_user["user_id"]
+                liker_id=current_user["user_id"]
             )
             self.db_session.add(like)
             await self.db_session.commit()
             await self.db_session.refresh(like)
-        except Exception:
+        except Exception as exc:
+            print(str(exc))
             raise BlogLikeFail()
+
         return await self.get(blog_id=blog_id)
 
     async def unlike(
@@ -590,18 +599,20 @@ class BlogService:
         Returns:
             BlogRead: blog data
         """
+        # Check if blog exists
+        await self.get(blog_id=blog_id)
         # Check if user is not already a subscriber
         already_likes = await self.check_like(
             blog_id=blog_id,
             current_user=current_user
         )
         if not already_likes:
-            raise BlogNotLiked()
+            raise BlogNotLiked(blog_id=blog_id)
         
         # Delete subscription
         try:
-            self.db_session.delete(already_likes)
-            self.db_session.commit()
+            await self.db_session.delete(already_likes)
+            await self.db_session.commit()
         except Exception:
             raise BlogUnlikeFail()
         return await self.get(blog_id=blog_id)
