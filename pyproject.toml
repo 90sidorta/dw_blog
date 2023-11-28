@@ -22,6 +22,7 @@ python-jose = {extras = ["pycryptodome"], version = "^3.3.0"}
 python-multipart = "^0.0.6"
 factory-boy = "^3.3.0"
 black = "^23.11.0"
+isort = "^5.12.0"
 
 [tool.black]
 line-length = 120

@@ -1,13 +1,13 @@
-from uuid import UUID
-from passlib.context import CryptContext
 from datetime import datetime, timedelta
+from uuid import UUID
 
-from jose import jwt, JWTError
-from fastapi import HTTPException, status, Depends
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 
-from dw_blog.models.common import UserType
 from dw_blog.config import Settings
+from dw_blog.models.common import UserType
 
 settings = Settings()
 SECRET_KEY = settings.SECRET_KEY

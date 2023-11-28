@@ -1,10 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from dw_blog.services.auth import AuthService, get_auth_service
 from dw_blog.models.auth import Token
+from dw_blog.services.auth import AuthService, get_auth_service
 
 router = APIRouter()
 

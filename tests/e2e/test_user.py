@@ -1,12 +1,11 @@
 import pytest
-
+from fastapi import status
 from httpx import AsyncClient
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import status
 
-from tests.factories import ADMIN_TOKEN, ADMIN_ID
 from dw_blog.models.common import UserType
+from tests.factories import ADMIN_ID, ADMIN_TOKEN
 
 
 @pytest.mark.asyncio

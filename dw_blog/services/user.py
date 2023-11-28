@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -6,12 +6,11 @@ from sqlmodel import Session, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
-from dw_blog.models.user import User, UserRead
 from dw_blog.exceptions.user import UserNotFound
-from dw_blog.models.common import UserType
 from dw_blog.models.auth import AuthUser
-from dw_blog.db.db import get_session
-from dw_blog.utils.auth import get_password_hash, check_user
+from dw_blog.models.common import UserType
+from dw_blog.models.user import User, UserRead
+from dw_blog.utils.auth import check_user, get_password_hash
 
 
 class UserService:

@@ -1,10 +1,10 @@
 import uuid
-from typing import Optional, List
+from typing import List, Optional
 
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
+from dw_blog.models.blog import Blog, BlogAuthors, BlogLikes, BlogSubscribers
 from dw_blog.models.common import UserType
-from dw_blog.models.blog import BlogAuthors, Blog, BlogSubscribers, BlogLikes
 
 
 class UserBase(SQLModel):

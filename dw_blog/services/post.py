@@ -1,5 +1,5 @@
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -7,11 +7,10 @@ from sqlmodel import Session, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
-from dw_blog.models.post import Post, PostRead
-from dw_blog.db.db import get_session
-from dw_blog.utils.auth import check_if_admin
 from dw_blog.models.auth import AuthUser
+from dw_blog.models.post import Post, PostRead
 from dw_blog.services.user import UserService
+from dw_blog.utils.auth import check_if_admin
 
 
 class PostService:

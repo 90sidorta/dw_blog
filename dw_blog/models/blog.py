@@ -1,11 +1,11 @@
 import uuid
-from typing import List, Optional
 from datetime import datetime
 from enum import Enum
+from typing import List, Optional
 
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
-from dw_blog.models.common import Sort, Pagination
+from dw_blog.models.common import Pagination, Sort
 
 
 class SortBlogBy(str, Enum):

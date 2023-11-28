@@ -9,7 +9,6 @@ from pydantic import ValidationError
 
 from dw_blog.exceptions.common import ListException
 
-
 generic_msg = "Server error! Try again and if problem persist, please contact your admin."
 
 

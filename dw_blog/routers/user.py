@@ -1,13 +1,14 @@
+from typing import List, Optional
 from uuid import UUID
-from typing import Optional, List
 
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, Query, status
 
-from dw_blog.models.user import User, UserCreate, UserRead, UserUpdate, UserdDelete
+from dw_blog.models.auth import AuthUser
 from dw_blog.models.common import UserType
+from dw_blog.models.user import (User, UserCreate, UserdDelete, UserRead,
+                                 UserUpdate)
 from dw_blog.services.user import UserService, get_user_service
 from dw_blog.utils.auth import get_current_user
-from dw_blog.models.auth import AuthUser
 
 router = APIRouter()
 

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 from dw_blog.models.post import Post
 

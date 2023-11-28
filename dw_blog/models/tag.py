@@ -1,8 +1,8 @@
 import uuid
-from typing import List
 from datetime import datetime
+from typing import List
 
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 from dw_blog.models.blog import Blog
 

@@ -1,19 +1,14 @@
-from uuid import UUID
 from typing import Optional
+from uuid import UUID
 
-from sqlmodel import select, func, delete
+from sqlmodel import delete, func, select
 
-from dw_blog.models.user import User
+from dw_blog.models.auth import AuthUser
+from dw_blog.models.blog import (Blog, BlogAuthors, BlogLikes, BlogSubscribers,
+                                 SortBlogBy)
 from dw_blog.models.common import SortOrder
 from dw_blog.models.tag import Tag
-from dw_blog.models.auth import AuthUser
-from dw_blog.models.blog import (
-    Blog,
-    BlogAuthors,
-    BlogLikes,
-    BlogSubscribers,
-    SortBlogBy,
-)
+from dw_blog.models.user import User
 
 UserLiker = User.__table__.alias()
 UserSubscriber = User.__table__.alias()

@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 
 from dw_blog.db.db import init_db
-from dw_blog.routers.user import router as user_router
 from dw_blog.routers.auth import router as auth_router
-from dw_blog.routers.post import router as post_router
 from dw_blog.routers.blog import router as blog_router
+from dw_blog.routers.post import router as post_router
 from dw_blog.routers.tag import router as tag_router
+from dw_blog.routers.user import router as user_router
 
 app = FastAPI()
 

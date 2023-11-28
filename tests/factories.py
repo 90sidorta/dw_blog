@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
 
-from dw_blog.models.user import User
-from dw_blog.models.blog import Blog
-from dw_blog.models.tag import Tag
-from dw_blog.models.common import UserType
-
 import factory.fuzzy
+
+from dw_blog.models.blog import Blog
+from dw_blog.models.common import UserType
+from dw_blog.models.tag import Tag
+from dw_blog.models.user import User
 
 ADMIN_ID = "00000000-0000-0000-0000-000000000001"
 ADMIN_EMAIL = "owner@labgears.com"

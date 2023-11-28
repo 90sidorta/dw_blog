@@ -6,18 +6,13 @@ from sqlmodel import Session, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
-from dw_blog.models.tag import TagRead, Tag
-from dw_blog.exceptions.tag import (
-    TagFailedAdd,
-    TagNotFound,
-    TagUpdateFail,
-    TagDeleteFail,
-)
-from dw_blog.db.db import get_session
+from dw_blog.exceptions.tag import (TagDeleteFail, TagFailedAdd, TagNotFound,
+                                    TagUpdateFail)
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.blog import Blog
-from dw_blog.services.user import UserService
+from dw_blog.models.tag import Tag, TagRead
 from dw_blog.services.blog import BlogService
+from dw_blog.services.user import UserService
 
 
 class TagService:

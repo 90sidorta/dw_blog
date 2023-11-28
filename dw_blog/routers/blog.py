@@ -1,13 +1,14 @@
+from typing import List, Optional
 from uuid import UUID
-from typing import Optional, List
 
 from fastapi import APIRouter, Depends, status
 
-from dw_blog.models.common import ErrorModel, Pagination, SortOrder, Sort
-from dw_blog.models.blog import BlogCreate, BlogRead, BlogUpdate, ReadBlogsPagination, SortBlogBy
+from dw_blog.models.auth import AuthUser
+from dw_blog.models.blog import (BlogCreate, BlogRead, BlogUpdate,
+                                 ReadBlogsPagination, SortBlogBy)
+from dw_blog.models.common import ErrorModel, Pagination, Sort, SortOrder
 from dw_blog.services.blog import BlogService, get_blog_service
 from dw_blog.utils.auth import get_current_user
-from dw_blog.models.auth import AuthUser
 from errors import RouteErrorHandler
 
 router = APIRouter(route_class=RouteErrorHandler)
