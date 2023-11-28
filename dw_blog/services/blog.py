@@ -56,6 +56,7 @@ from dw_blog.exceptions.blog import (
     BlogLikeFail,
     BlogUnlikeFail,
     BlogNotAuthor,
+    BlogArchived,
 )
 
 
@@ -142,34 +143,35 @@ class BlogService:
 
         # Prepare and send response
         return BlogRead(
-            id=blog[0],
-            name=blog[1],
-            date_created=blog[2],
-            date_modified=blog[3],
+            id=blog.id,
+            name=blog.name,
+            date_created=blog.date_created,
+            date_modified=blog.date_modified,
             authors=[
                 BlogAuthor(
                     author_id=author_id,
                     nickname=nickname
-                ) for author_id, nickname in zip(blog[4], blog[5])
+                ) for author_id, nickname in zip(blog.author_id, blog.author_nickname)
             ],
             tags=[
                 BlogTag(
                     tag_id=tag_id,
                     tag_name=tag_name
-                ) for tag_id, tag_name in zip(blog[6], blog[7])
+                ) for tag_id, tag_name in zip(blog.tag_id, blog.tag_name)
             ],
             likers=[
                 BlogLiker(
                     liker_id=liker_id,
                     nickname=nickname,
-                ) for liker_id, nickname in zip(blog[8], blog[9])
+                ) for liker_id, nickname in zip(blog.likers_id, blog.likers_nicknames)
             ],
             subscribers=[
                 BlogSubscriber(
                     subscriber_id=subscriber_id,
                     nickname=nickname,
-                ) for subscriber_id, nickname in zip(blog[10], blog[11])
-            ]
+                ) for subscriber_id, nickname in zip(blog.subscriber_id, blog.subscriber_nicknames)
+            ],
+            archived=blog.archived
         )
 
     async def list(
@@ -477,13 +479,18 @@ class BlogService:
         Returns:
             BlogRead: blog data
         """
+        # Check if blog exists and is active
+        blog = await self.get(blog_id=blog_id)
+        if blog.archived:
+            raise BlogArchived(blog_id=blog_id)
+
         # Check if user is not already a subscriber
         already_subscribes = await self.check_subscription(
             blog_id=blog_id,
             current_user=current_user
         )
         if already_subscribes:
-            raise BlogAlreadySubscribed()
+            raise BlogAlreadySubscribed(blog_id=blog_id)
         
         # Try to add new subscription
         try:
@@ -496,6 +503,7 @@ class BlogService:
             await self.db_session.refresh(subscription)
         except Exception:
             raise BlogSubscribtionFail()
+
         return await self.get(blog_id=blog_id)
 
     async def unsubscribe(

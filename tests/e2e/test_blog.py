@@ -494,9 +494,75 @@ async def test__remove_blog_author_404_nonexisting_blog(
     assert response.json()["detail"] == f"Blog {blog_1} not found!"
 
 
+async def test__add_blog_subscription_200(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/subscribe",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    subscribers = [subscriber["subscriber_id"] for subscriber in response.json()["subscribers"]]
+    assert ADMIN_ID in subscribers
 
 
-# ===add_blog_subscription===
+async def test__add_blog_subscription_400_already_subscribed(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    await async_client.post(
+        f"/blogs/{blog_1.id}/subscribe",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/subscribe",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"You already subscribed blog {blog_1.id}!"
+
+
+async def test__add_blog_subscription_404_blog_nonexistent(
+    async_client: AsyncClient,
+    access_token,
+):
+    blog_1 = uuid.uuid4()
+
+    response = await async_client.post(
+        f"/blogs/{blog_1}/subscribe",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Blog {blog_1} not found!"
+
+
+async def test__add_blog_subscription_400_blog_archived(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session, archived= True)
+
+    response = await async_client.post(
+        f"/blogs/{blog_1.id}/subscribe",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"Blog {blog_1.id} is archived!"
+
+
+
 # ===remove_blog_subscription===
 # ===add_blog_like===
 # ===remove_blog_like===

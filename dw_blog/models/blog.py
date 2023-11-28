@@ -106,6 +106,7 @@ class BlogRead(SQLModel):
     tags: Optional[List[BlogTag]]
     likers: Optional[List[BlogLiker]]
     subscribers: Optional[List[BlogSubscriber]]
+    archived: bool
 
 
 class BlogReadList(SQLModel):

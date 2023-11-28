@@ -112,8 +112,17 @@ class BlogDeleteFail(HTTPException):
 
 
 class BlogAlreadySubscribed(HTTPException):
-    def __init__(self):
-        detail="You already subscribe this blog!",
+    def __init__(self, blog_id: UUID):
+        detail=f"You already subscribed blog {blog_id}!",
+        super().__init__(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail=detail,
+        )
+
+
+class BlogArchived(HTTPException):
+    def __init__(self, blog_id: UUID):
+        detail=f"Blog {blog_id} is archived!",
         super().__init__(
              status_code=status.HTTP_400_BAD_REQUEST,
              detail=detail,

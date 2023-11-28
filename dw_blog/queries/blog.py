@@ -34,6 +34,7 @@ def get_single_blog_query(blog_id: UUID):
             func.array_agg(func.distinct(UserLiker.c.nickname)).label("likers_nicknames"),
             func.array_agg(func.distinct(UserSubscriber.c.id)).label("subscriber_id"),
             func.array_agg(func.distinct(UserSubscriber.c.nickname)).label("subscriber_nicknames"),
+            Blog.archived,
         )
         .join(BlogAuthors, onclause=Blog.id == BlogAuthors.blog_id, isouter=True)
         .join(User, onclause=BlogAuthors.author_id == User.id, isouter=True)
