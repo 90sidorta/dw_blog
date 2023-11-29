@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -38,8 +38,17 @@ class CategoryCreate(SQLModel):
     )
 
 
-class CategoryRead(CategoryBase):
+class CategoryBlogRead(SQLModel):
+    blog_id: Optional[uuid.UUID]
+    blog_name: Optional[str]
+
+
+class CategoryRead(SQLModel):
     id: uuid.UUID
+    date_created: datetime
+    date_modified: datetime
+    approved: bool
+    blogs: Optional[List[CategoryBlogRead]]
 
 
 class CategoryUpdate(CategoryCreate):

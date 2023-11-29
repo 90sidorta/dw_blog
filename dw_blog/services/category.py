@@ -2,14 +2,16 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import Depends
-from sqlmodel import Session, select
+from sqlmodel import Session
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
 from dw_blog.exceptions.category import CategoryFailedAdd, CategoryNotFound
 from dw_blog.models.auth import AuthUser
-from dw_blog.models.category import Category, CategoryRead
+from dw_blog.models.category import Category, CategoryRead, CategoryBlogRead
 from dw_blog.models.user import User, UserType
+from dw_blog.queries.category import get_single_category_query
+
 
 
 class CategoryService:
@@ -53,7 +55,8 @@ class CategoryService:
     async def get(
         self,
         category_id: UUID,
-    ) -> CategoryRead:
+    ):
+        # -> CategoryRead:
         """Get single category based on it's id
         Args:
             category_id (UUID): id of the category
@@ -64,7 +67,7 @@ class CategoryService:
             CategoryRead: Tag data with blog name and id
         """
         # Query to return tag with blog data
-        q = select(Category).where(Category.id == category_id)
+        q = get_single_category_query(category_id=category_id)
         result = await self.db_session.exec(q)
         category = result.first()
 
@@ -72,7 +75,17 @@ class CategoryService:
         if category is None:
             raise CategoryNotFound(category_id=category_id)
 
-        return category
+        return CategoryRead(
+            id=category.id,
+            name=category.name,
+            approved=category.approved,
+            date_created=category.date_created,
+            date_modified=category.date_modified,
+            blogs=[
+                CategoryBlogRead(blog_id=blog_id, blog_name=blog_name)
+                for blog_id, blog_name in (zip(category.blog_ids, category.blog_names))
+            ]
+        )
 
 async def get_category_service(session: AsyncSession = Depends(get_session)):
     yield CategoryService(session)

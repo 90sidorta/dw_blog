@@ -30,3 +30,23 @@ async def add_category(
     current_user: AuthUser = Depends(get_current_user),
 ):
     return await category_service.create(current_user=current_user, **request.dict())
+
+
+@router.get(
+    "/{category_id}",
+    # response_model=CategoryRead,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
+    },
+    summary="Get single category",
+    description="Get single category data with blogs, based on its id.",
+)
+async def get_category(
+    category_id: UUID,
+    category_service: CategoryService = Depends(get_category_service),
+):
+    return await category_service.get(category_id=category_id)
