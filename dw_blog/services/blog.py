@@ -130,6 +130,7 @@ class BlogService:
                 for subscriber_id, nickname in zip(blog.subscriber_id, blog.subscriber_nicknames)
             ],
             archived=blog.archived,
+            categories_name=blog.categories_name,
         )
 
     async def list(

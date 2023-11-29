@@ -6,7 +6,7 @@ from typing import List, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
 from dw_blog.models.common import Pagination, Sort
-# from dw_blog.models.category import Category, CategoryBlogs
+from dw_blog.models.category import Category, CategoryBlogs
 
 
 class SortBlogBy(str, Enum):
@@ -56,10 +56,10 @@ class Blog(BlogBase, table=True):
         back_populates="subscribed_blogs",
         link_model=BlogSubscribers,
     )
-    # categories: List[Category] = Relationship(
-    #     back_populates="blogs",
-    #     link_model=CategoryBlogs,
-    # )
+    categories: List[Category] = Relationship(
+        back_populates="blogs",
+        link_model=CategoryBlogs,
+    )
     tags: List["Tag"] = Relationship(back_populates="blog")
 
 
@@ -103,6 +103,7 @@ class BlogTag(SQLModel):
 class BlogRead(SQLModel):
     id: uuid.UUID
     name: str
+    categories_name: List[str]
     date_created: datetime
     date_modified: datetime
     authors: List[BlogAuthor]
@@ -114,6 +115,7 @@ class BlogRead(SQLModel):
 
 class BlogReadList(SQLModel):
     id: uuid.UUID
+    categories_name: List[str]
     name: str
     archived: bool
     subscription_count: int

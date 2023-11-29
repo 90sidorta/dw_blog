@@ -9,6 +9,7 @@ from dw_blog.models.blog import (Blog, BlogAuthors, BlogLikes, BlogSubscribers,
 from dw_blog.models.common import SortOrder
 from dw_blog.models.tag import Tag
 from dw_blog.models.user import User
+from dw_blog.models.category import Category, CategoryBlogs
 
 UserLiker = User.__table__.alias()
 UserSubscriber = User.__table__.alias()
@@ -30,6 +31,7 @@ def get_single_blog_query(blog_id: UUID):
             func.array_agg(func.distinct(UserSubscriber.c.id)).label("subscriber_id"),
             func.array_agg(func.distinct(UserSubscriber.c.nickname)).label("subscriber_nicknames"),
             Blog.archived,
+            func.array_agg(func.distinct(Category.name)).label("categories_name"),
         )
         .join(BlogAuthors, onclause=Blog.id == BlogAuthors.blog_id, isouter=True)
         .join(User, onclause=BlogAuthors.author_id == User.id, isouter=True)
@@ -38,6 +40,8 @@ def get_single_blog_query(blog_id: UUID):
         .join(BlogSubscribers, onclause=Blog.id == BlogSubscribers.blog_id, isouter=True)
         .join(UserSubscriber, onclause=BlogSubscribers.subscriber_id == UserSubscriber.c.id, isouter=True)
         .join(Tag, onclause=Blog.id == Tag.blog_id, isouter=True)
+        .join(CategoryBlogs, onclause=Blog.id == CategoryBlogs.blog_id, isouter=True)
+        .join(Category, onclause=CategoryBlogs.category_id == Category.id, isouter=True)
         .where(Blog.id == blog_id)
         .group_by(Blog.id)
     )
@@ -57,6 +61,7 @@ def get_listed_blogs_query(
     sub_q = (
         select(
             Blog.id.label("id"),
+            func.array_agg(func.distinct(Category.name)).label("categories_name"),
             Blog.archived.label("archived"),
             Blog.name.label("name"),
             Blog.date_created.label("date_created"),
@@ -64,6 +69,8 @@ def get_listed_blogs_query(
             func.count(func.distinct(BlogSubscribers.subscriber_id)).label("subscription_count"),
             func.count(func.distinct(BlogLikes.liker_id)).label("likes_count"),
         )
+        .join(CategoryBlogs, onclause=Blog.id == CategoryBlogs.blog_id, isouter=True)
+        .join(Category, onclause=CategoryBlogs.category_id == Category.id, isouter=True)
         .join(BlogSubscribers, onclause=BlogSubscribers.blog_id == Blog.id, isouter=True)
         .join(BlogLikes, onclause=BlogLikes.blog_id == Blog.id, isouter=True)
         .group_by(Blog.id)
@@ -71,6 +78,7 @@ def get_listed_blogs_query(
     )
     q = select(
         sub_q.c.id,
+        sub_q.c.categories_name,
         sub_q.c.archived,
         sub_q.c.name,
         sub_q.c.date_created,
@@ -126,10 +134,8 @@ def get_listed_blogs_query(
     # Assign query for count of all records
     q_all = q
     # Add pagination to query
-    print("====================")
-    print(q)
-    print("====================")
     q_pag = q.limit(limit).offset(offset)
+
     return q_pag, q_all
 
 

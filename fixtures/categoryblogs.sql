@@ -5,3 +5,15 @@ insert into "categoryblogs" ("category_id", "blog_id") values ('9730fa72-93c3-41
 insert into "categoryblogs" ("category_id", "blog_id") values ('9730fa72-93c3-410c-b2f9-cc6123dcea03', 'bd025e5a-53ae-41a6-9c24-c5ff2e7c0bf8');
 insert into "categoryblogs" ("category_id", "blog_id") values ('7701dc90-e41d-451e-b9c7-97489c6bc085', 'bd025e5a-53ae-41a6-9c24-c5ff2e7c0bf8');
 insert into "categoryblogs" ("category_id", "blog_id") values ('7701dc90-e41d-451e-b9c7-97489c6bc085', '3b27a5be-9dc8-46b9-b89a-c74c6c3acbde');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d51', '3b27a5be-9dc8-46b9-b89a-c74c6c4acbde');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d51', '3b27a5be-9dc8-46b9-b89a-c99c6c4acbde');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d51', '228c2450-68ee-48c8-85a4-686ed962185f');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d51', '3af3cecc-380c-4c68-a3f8-ff7eebebf7af');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d50', '3b27a5be-9dc8-46b9-b89a-c74c6c4acbde');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d50', '3b27a5be-9dc8-46b9-b89a-c99c6c4acbde');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d50', '228c2450-68ee-48c8-85a4-686ed962185f');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d50', '3af3cecc-380c-4c68-a3f8-ff7eebebf7af');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d53', '3b27a5be-9dc8-46b9-b89a-c74c6c4acbde');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d53', '3b27a5be-9dc8-46b9-b89a-c99c6c4acbde');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d53', '228c2450-68ee-48c8-85a4-686ed962185f');
+insert into "categoryblogs" ("category_id", "blog_id") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d53', '3af3cecc-380c-4c68-a3f8-ff7eebebf7af');
