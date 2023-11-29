@@ -1,0 +1,5 @@
+insert into "category" ("id", "name", "date_created", "date_modified", "approved") values ('9730fa72-93c3-410c-b2f9-cc6123dcea03', 'Happy Happy', '2023-06-02T02:19:07Z', '2023-08-31T01:55:57Z', true);
+insert into "category" ("id", "name", "date_created", "date_modified", "approved") values ('7701dc90-e41d-451e-b9c7-97489c6bc085', 'CALCID', '2023-01-06T20:42:24Z', '2023-03-19T11:09:49Z', true);
+insert into "category" ("id", "name", "date_created", "date_modified", "approved") values ('ea207ab1-354a-4d87-bf20-2cbc64dd8d9c', 'Corn Removers', '2023-05-04T00:32:32Z', '2022-12-31T06:29:36Z', true);
+insert into "category" ("id", "name", "date_created", "date_modified", "approved") values ('ba411ad6-20d2-4a13-8796-dc0c80b79d52', 'Ultravate PAC-Cream', '2023-05-10T09:56:12Z', '2023-03-23T12:58:30Z', true);
+insert into "category" ("id", "name", "date_created", "date_modified", "approved") values ('4d5927eb-128a-4298-a7c5-030ee95d0604', 'Levetiracetam', '2023-11-05T16:12:32Z', '2023-07-08T01:38:24Z', false);

@@ -6,6 +6,7 @@ from typing import List, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
 from dw_blog.models.common import Pagination, Sort
+from dw_blog.models.category import Category, CategoryBlogs
 
 
 class SortBlogBy(str, Enum):
@@ -52,6 +53,10 @@ class Blog(BlogBase, table=True):
     subscribers: List["User"] = Relationship(
         back_populates="subscribed_blogs",
         link_model=BlogSubscribers,
+    )
+    categories: List[Category] = Relationship(
+        back_populates="blogs",
+        link_model=CategoryBlogs,
     )
     tags: List["Tag"] = Relationship(back_populates="blog")
 
