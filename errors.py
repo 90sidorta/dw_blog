@@ -32,7 +32,7 @@ class RouteErrorHandler(APIRoute):
                     detail = exc.detail
                     return JSONResponse(
                         status_code=status_code,
-                        content={"detail": f"{detail[0]}"},
+                        content={"detail": f"{detail}"},
                     )
                 elif isinstance(exc, ListException):
                     return JSONResponse(

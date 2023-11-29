@@ -15,8 +15,7 @@ class ListException(Exception):
 
 class PaginationLimitSurpassed(HTTPException):
     def __init__(self):
-        detail = ("Pagination limit cannot be higher than 20!",)
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=detail,
+            detail="Pagination limit cannot be higher than 20!",
         )

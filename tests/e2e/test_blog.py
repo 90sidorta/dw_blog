@@ -270,7 +270,7 @@ async def test__add_blog_authors_400(
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert response.json()["detail"][0]["status_code"] == status.HTTP_403_FORBIDDEN
-    assert response.json()["detail"][0]["detail"][0] == f"User {user_1.id} is already an author!"
+    assert response.json()["detail"][0]["detail"] == f"User {user_1.id} is already an author!"
 
 
 async def test__add_blog_authors_403_not_your_blog(
@@ -329,7 +329,7 @@ async def test__add_blog_authors_422_already_three_blogs(
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert response.json()["detail"][0]["status_code"] == status.HTTP_403_FORBIDDEN
-    assert response.json()["detail"][0]["detail"][0] == f"User {user_1.id} already has 3 blogs!"
+    assert response.json()["detail"][0]["detail"] == f"User {user_1.id} already has 3 blogs!"
 
 
 async def test__add_blog_authors_422_nonexisting_user(
@@ -678,4 +678,10 @@ async def test__remove_blog_like_404_blog_nonexistent(
 
 
 # ===update_blog===
+# 200 update blog name
+# 200 deactivate blog
+# 403 trying to change other user blog
+# 422 trying to change name (too short)
+# 404 trying to update nonexistent blog
+
 # ===delete_blog===
