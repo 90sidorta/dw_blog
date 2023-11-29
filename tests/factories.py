@@ -6,6 +6,7 @@ from dw_blog.models.blog import Blog
 from dw_blog.models.common import UserType
 from dw_blog.models.tag import Tag
 from dw_blog.models.user import User
+from dw_blog.models.category import Category
 
 ADMIN_ID = "00000000-0000-0000-0000-000000000001"
 ADMIN_EMAIL = "owner@labgears.com"
@@ -33,6 +34,17 @@ class TagFactory(factory.Factory):
     blog_id = None
 
 
+class CategoryFactory(factory.Factory):
+    class Meta:
+        model = Category
+
+    id = factory.Faker("uuid4")
+    name = factory.Sequence(lambda n: f"Category_name_{n}")
+    date_created = datetime.now()
+    date_modified = datetime.now()
+    blogs = []
+
+
 class BlogFactory(factory.Factory):
     class Meta:
         model = Blog
@@ -45,6 +57,7 @@ class BlogFactory(factory.Factory):
     authors = factory.List([factory.SubFactory(UserFactory)])
     likers = factory.List([factory.SubFactory(UserFactory)])
     subscribers = factory.List([factory.SubFactory(UserFactory)])
+    categories = factory.List([factory.SubFactory(CategoryFactory)])
     tags = []
 
 

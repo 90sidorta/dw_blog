@@ -69,6 +69,7 @@ class BlogCreate(SQLModel):
         max_length=500,
         nullable=False,
     )
+    categories_id: List[uuid.UUID]
 
 
 class BlogUpdate(SQLModel):
@@ -78,6 +79,7 @@ class BlogUpdate(SQLModel):
         nullable=True,
     )
     archived: Optional[bool] = False
+    categories_id: Optional[List[uuid.UUID]] = []
 
 
 class BlogAuthor(SQLModel):

@@ -7,33 +7,37 @@ from httpx import AsyncClient
 
 from tests.conftest import (_add_author_to_blog, _add_blog,
                             _add_likers_to_blog, _add_subscriber_to_blog,
-                            _add_user)
+                            _add_user, _add_category)
 from tests.factories import ADMIN_ID
 
 
 @pytest.mark.asyncio
 async def test__add_blog_200(
     async_client: AsyncClient,
+    async_session,
     access_token,
 ):
-    blog_name = "Blog test name"
+    cat_1 = await _add_category(async_session)
+    payload={"name": "Newest blog!", "categories_id": [str(cat_1.id)]}
 
     response = await async_client.post(
-        f"/blogs", json={"name": blog_name}, headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs", json=payload, headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["name"] == blog_name
+    assert response.json()["name"] == payload["name"]
 
 
 async def test__add_blog_422_short_name(
     async_client: AsyncClient,
+    async_session,
     access_token,
 ):
-    blog_name = "Bl"
+    cat_1 = await _add_category(async_session)
+    payload={"name": "Bl", "categories_id": [str(cat_1.id)]}
 
     response = await async_client.post(
-        f"/blogs", json={"name": blog_name}, headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs", json=payload, headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -46,16 +50,17 @@ async def test__add_blog_403_more_than_three_blogs(
     async_session,
     access_token,
 ):
+    cat_1 = await _add_category(async_session)
+    payload={"name": "Blog test name", "categories_id": [str(cat_1.id)]}
     blog_1 = await _add_blog(async_session)
     blog_2 = await _add_blog(async_session)
     blog_3 = await _add_blog(async_session)
     await _add_author_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
     await _add_author_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_2.id)
     await _add_author_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_3.id)
-    blog_name = "Blog test name"
 
     response = await async_client.post(
-        f"/blogs", json={"name": blog_name}, headers={"Authorization": f"Bearer {access_token}"}
+        f"/blogs", json=payload, headers={"Authorization": f"Bearer {access_token}"}
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN

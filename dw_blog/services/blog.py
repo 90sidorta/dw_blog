@@ -27,6 +27,7 @@ from dw_blog.models.blog import (Blog, BlogAuthor, BlogAuthors, BlogLiker,
                                  SortBlogBy)
 from dw_blog.models.common import SortOrder
 from dw_blog.models.user import UserType
+from dw_blog.models.category import Category
 from dw_blog.queries.blog import (check_like_query, check_subscription_query,
                                   delete_author_query, get_listed_blogs_query,
                                   get_single_blog_query, is_author_query)
@@ -55,11 +56,13 @@ class BlogService:
         self,
         current_user: AuthUser,
         name: str,
+        categories_id: List[UUID],
     ) -> BlogRead:
         """This function creates new blog for authenticated user.
         Args:
             current_user (AuthUser): data of authenticated user.
             name (str): blog name
+            categories_id (List[UUID]): list of categories id
         Raises:
             BlogLimitReached: raised if user already has 3 blogs
             FailedBlogAdd: raised if blog addition failed
@@ -70,9 +73,22 @@ class BlogService:
         user = await self.user_service.get(user_id=str(current_user["user_id"]))
         await self.check_author_blogs(user.id)
 
+        # Get categories
+        # TODO: move this code to category service
+        categories = []
+        for category_id in categories_id:
+            category = await self.db_session.get(Category, category_id)
+            categories.append(category)
+
         # Try to add new blog
         try:
-            blog = Blog(name=name, date_created=datetime.now(), date_modified=datetime.now(), authors=[user])
+            blog = Blog(
+                name=name,
+                date_created=datetime.now(),
+                date_modified=datetime.now(),
+                authors=[user],
+                categories=categories,
+            )
             self.db_session.add(blog)
             await self.db_session.commit()
             await self.db_session.refresh(blog)
@@ -474,8 +490,7 @@ class BlogService:
             self.db_session.add(like)
             await self.db_session.commit()
             await self.db_session.refresh(like)
-        except Exception as exc:
-            print(str(exc))
+        except Exception:
             raise BlogLikeFail()
 
         return await self.get(blog_id=blog_id)
@@ -516,6 +531,7 @@ class BlogService:
         current_user: AuthUser,
         name: Optional[str] = None,
         archived: Optional[bool] = None,
+        categories_id: List[UUID] = [],
     ) -> BlogRead:
         """Updates blog data
         Args:
@@ -528,6 +544,7 @@ class BlogService:
         Returns:
             BlogRead: Read blog with author data
         """
+        # TODO: add an option to update categories of the blog
         await self.check_blog(
             blog_id=blog_id,
             current_user=current_user,
