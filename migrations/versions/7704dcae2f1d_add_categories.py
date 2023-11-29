@@ -26,7 +26,8 @@ def upgrade() -> None:
     sa.Column('date_modified', sa.DateTime(), nullable=False),
     sa.Column('approved', sa.Boolean(), nullable=False),
     sa.Column('id', sqlmodel.sql.sqltypes.GUID(), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint("name"),
     )
     op.create_index(op.f('ix_category_id'), 'category', ['id'], unique=False)
     op.create_table('categoryblogs',

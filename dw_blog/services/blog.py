@@ -539,6 +539,7 @@ class BlogService:
             current_user (AuthUser): current user object
             name (str): new blog name
             archived (bool): archive the blog
+            categories_id (List[UUID]): list of categories id
         Raises:
             BlogUpdateFail: raised if blog update failed
         Returns:

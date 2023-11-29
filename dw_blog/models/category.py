@@ -14,6 +14,7 @@ class CategoryBase(SQLModel):
     name: str = Field(
         min_length=3,
         max_length=500,
+        unique=True,
         nullable=False,
     )
     date_created: datetime = Field(default_factory=datetime.utcnow)
