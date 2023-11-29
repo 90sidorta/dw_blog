@@ -346,7 +346,7 @@ async def test__add_blog_authors_422_nonexisting_user(
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert response.json()["detail"][0]["status_code"] == status.HTTP_404_NOT_FOUND
-    assert response.json()["detail"][0]["detail"][0] == f"User with id {user_1} not found"
+    assert response.json()["detail"][0]["detail"] == f"User with id {user_1} not found"
 
 
 async def test__add_blog_authors_404_nonexisting_blog(
@@ -677,11 +677,119 @@ async def test__remove_blog_like_404_blog_nonexistent(
     assert response.json()["detail"] == f"Blog {blog_1} not found!"
 
 
-# ===update_blog===
-# 200 update blog name
-# 200 deactivate blog
-# 403 trying to change other user blog
-# 422 trying to change name (too short)
-# 404 trying to update nonexistent blog
+async def test__update_blog_200_name(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    await _add_author_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
+    payload = {"name": "Completely new name"}
 
-# ===delete_blog===
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["name"] == payload["name"]
+
+
+async def test__update_blog_422_name_too_short(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    await _add_author_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
+    payload = {"name": "a"}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.json()["detail"] == "Validation error: ensure this value has at least 3 characters!"
+    assert response.json()["location"] == "name"
+
+
+async def test__update_blog_200_deactivate(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    await _add_author_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
+    payload = {"archived": True}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["archived"] == payload["archived"]
+
+
+async def test__update_blog_403_other_user_blog(
+    async_client: AsyncClient,
+    other_user_access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    payload = {"name": "Completely new name"}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {other_user_access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == f"Blog {blog_1.id} does not belong to you!"
+
+
+async def test__update_blog_404_nonexistent_blog(
+    async_client: AsyncClient,
+    access_token,
+):
+    blog_1 = uuid.uuid4()
+    payload = {"name": "Completely new name"}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Blog {blog_1} not found!"
+
+
+async def test__delete_blog_204(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    await _add_author_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
+
+    response = await async_client.delete(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+async def test__delete_blog_403_other_user_blog(
+    async_client: AsyncClient,
+    other_user_access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+
+    response = await async_client.delete(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {other_user_access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == f"Blog {blog_1.id} does not belong to you!"

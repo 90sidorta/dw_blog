@@ -196,43 +196,6 @@ class BlogService:
         if current_user["user_id"] not in authors_ids and current_user["user_type"] != UserType.admin:
             raise BlogNotYours(blog_id=blog_id)
 
-    async def update(
-        self,
-        blog_id: UUID,
-        current_user: AuthUser,
-        name: Optional[str] = None,
-        archived: Optional[bool] = None,
-    ) -> BlogRead:
-        """Updates blog data
-        Args:
-            blog_id (UUID): id of blog to be updated
-            current_user (AuthUser): current user object
-            name (str): new blog name
-            archived (bool): archive the blog
-        Raises:
-            BlogUpdateFail: raised if blog update failed
-        Returns:
-            BlogRead: Read blog with author data
-        """
-        await self.check_blog(
-            blog_id=blog_id,
-            current_user=current_user,
-        )
-
-        # Update blog name
-        update_blog = await self.db_session.get(Blog, blog_id)
-        if name:
-            update_blog.name = name
-        if archived:
-            update_blog.archived = archived
-        try:
-            self.db_session.add(update_blog)
-            await self.db_session.commit()
-        except Exception:
-            raise BlogUpdateFail()
-
-        return await self.get(blog_id=blog_id)
-
     async def is_author_already(
         self,
         blog_id: UUID,
@@ -542,6 +505,46 @@ class BlogService:
             await self.db_session.commit()
         except Exception:
             raise BlogUnlikeFail()
+        return await self.get(blog_id=blog_id)
+
+    async def update(
+        self,
+        blog_id: UUID,
+        current_user: AuthUser,
+        name: Optional[str] = None,
+        archived: Optional[bool] = None,
+    ) -> BlogRead:
+        """Updates blog data
+        Args:
+            blog_id (UUID): id of blog to be updated
+            current_user (AuthUser): current user object
+            name (str): new blog name
+            archived (bool): archive the blog
+        Raises:
+            BlogUpdateFail: raised if blog update failed
+        Returns:
+            BlogRead: Read blog with author data
+        """
+        await self.check_blog(
+            blog_id=blog_id,
+            current_user=current_user,
+        )
+
+        # Update blog name
+        update_blog = await self.db_session.get(Blog, blog_id)
+        if name:
+            update_blog.name = name
+
+        # Update blog status
+        if archived:
+            update_blog.archived = archived
+
+        try:
+            self.db_session.add(update_blog)
+            await self.db_session.commit()
+        except Exception:
+            raise BlogUpdateFail(blog_id=blog_id)
+
         return await self.get(blog_id=blog_id)
 
     async def delete(
