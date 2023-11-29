@@ -138,6 +138,7 @@ class BlogService:
         offset: int,
         blog_name: Optional[str] = None,
         author_id: Optional[UUID] = None,
+        archived: Optional[Union[bool, None]] = None,
         sort_order: SortOrder = SortOrder.ascending,
         sort_by: SortBlogBy = SortBlogBy.date_created,
     ) -> Union[List[BlogReadList], int]:
@@ -163,6 +164,7 @@ class BlogService:
             offset=offset,
             blog_name=blog_name,
             author_id=author_id,
+            archived=archived,
             sort_order=sort_order,
             sort_by=sort_by,
         )

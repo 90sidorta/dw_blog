@@ -16,8 +16,8 @@ from dw_blog.models import (
     BlogLikes,
     BlogAuthors,
     BlogSubscribers,
-    CategoryBlogs,
-    Category,
+    # CategoryBlogs,
+    # Category,
 )
 
 # this is the Alembic Config object, which provides

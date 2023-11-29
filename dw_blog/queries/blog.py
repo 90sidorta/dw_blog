@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 
 from sqlmodel import delete, func, select
@@ -49,20 +49,51 @@ def get_listed_blogs_query(
     offset: int,
     blog_name: Optional[str] = None,
     author_id: Optional[UUID] = None,
+    archived: Optional[Union[bool, None]] = None,
     sort_order: SortOrder = SortOrder.ascending,
     sort_by: SortBlogBy = SortBlogBy.date_created,
 ):
     # Create query
-    q = select(Blog)
+    sub_q = (
+        select(
+            Blog.id.label("id"),
+            Blog.archived.label("archived"),
+            Blog.name.label("name"),
+            Blog.date_created.label("date_created"),
+            Blog.date_modified.label("date_modified"),
+            func.count(func.distinct(BlogSubscribers.subscriber_id)).label("subscription_count"),
+            func.count(func.distinct(BlogLikes.liker_id)).label("likes_count"),
+        )
+        .join(BlogSubscribers, onclause=BlogSubscribers.blog_id == Blog.id, isouter=True)
+        .join(BlogLikes, onclause=BlogLikes.blog_id == Blog.id, isouter=True)
+        .group_by(Blog.id)
+        .alias()
+    )
+    q = select(
+        sub_q.c.id,
+        sub_q.c.archived,
+        sub_q.c.name,
+        sub_q.c.date_created,
+        sub_q.c.date_modified,
+        sub_q.c.subscription_count,
+        sub_q.c.likes_count,
+    )
+
+    # Get archived/active blogs only
+    if archived is not None:
+        if archived == True:
+            q = q.where(sub_q.c.archived == True)
+        else: 
+            q = q.where(sub_q.c.archived == False)
 
     # Get records based on blog name
     if blog_name:
-        q = q.where(Blog.name.ilike(f"%{blog_name}%"))
+        q = q.where(sub_q.c.name.ilike(f"%{blog_name}%"))
 
     # Get records based on blog author id
     if author_id:
         q = (
-            q.join(BlogAuthors, onclause=BlogAuthors.blog_id == Blog.id, isouter=True)
+            q.join(BlogAuthors, onclause=BlogAuthors.blog_id == sub_q.c.id, isouter=True)
             .join(User, onclause=User.id == BlogAuthors.author_id, isouter=True)
             .where(User.id == author_id)
         )
@@ -70,19 +101,34 @@ def get_listed_blogs_query(
     # Create sorting
     if sort_by == SortBlogBy.date_created:
         if sort_order == SortOrder.ascending:
-            q = q.order_by(Blog.date_created)
+            q = q.order_by(sub_q.c.date_created)
         else:
-            q = q.order_by(Blog.date_created.desc())
+            q = q.order_by(sub_q.c.date_created.desc())
+
+    if sort_by == SortBlogBy.subscribers:
+        if sort_order == SortOrder.ascending:
+            q = q.order_by(sub_q.c.subscription_count)
+        else:
+            q = q.order_by(sub_q.c.subscription_count.desc())
+
+    if sort_by == SortBlogBy.likers:
+        if sort_order == SortOrder.ascending:
+            q = q.order_by(sub_q.c.likes_count)
+        else:
+            q = q.order_by(sub_q.c.likes_count.desc())
 
     if sort_by == SortBlogBy.name:
         if sort_order == SortOrder.ascending:
-            q = q.order_by(Blog.name)
+            q = q.order_by(sub_q.c.name)
         else:
-            q = q.order_by(Blog.name.desc())
+            q = q.order_by(sub_q.c.name.desc())
 
     # Assign query for count of all records
     q_all = q
     # Add pagination to query
+    print("====================")
+    print(q)
+    print("====================")
     q_pag = q.limit(limit).offset(offset)
     return q_pag, q_all
 

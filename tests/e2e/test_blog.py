@@ -147,6 +147,58 @@ async def test__list_blogs_200_sort_date_created(
     assert order_asc != order_dsc
 
 
+async def test__list_blogs_200_sort_subscribers(
+    async_client: AsyncClient,
+    async_session,
+):
+    user_1 = await _add_user(async_session)
+    user_2 = await _add_user(async_session)
+    user_3 = await _add_user(async_session)
+    user_4 = await _add_user(async_session)
+    await _add_blog(async_session, name="Test blog1", subscribers=[user_1, user_2, user_3, user_4])
+    await _add_blog(async_session, name="Test blog2", subscribers=[user_1, user_2, user_3])
+    await _add_blog(async_session, name="Test blog3", subscribers=[user_1, user_2])
+
+    response_asc = await async_client.get(
+        f"/blogs?limit=10&offset=0&sort_by=subscribers&sort_order=ascending",
+    )
+    response_dsc = await async_client.get(
+        f"/blogs?limit=10&offset=0&sort_by=subscribers&sort_order=descending",
+    )
+
+    assert response_asc.status_code == status.HTTP_200_OK
+    assert response_dsc.status_code == status.HTTP_200_OK
+    order_asc = [blog for blog in response_asc.json()["data"]]
+    order_dsc = [blog for blog in response_dsc.json()["data"]]
+    assert order_asc != order_dsc
+
+
+async def test__list_blogs_200_sort_likers(
+    async_client: AsyncClient,
+    async_session,
+):
+    user_1 = await _add_user(async_session)
+    user_2 = await _add_user(async_session)
+    user_3 = await _add_user(async_session)
+    user_4 = await _add_user(async_session)
+    await _add_blog(async_session, name="Test blog1", likers=[user_1, user_2, user_3, user_4])
+    await _add_blog(async_session, name="Test blog2", likers=[user_1, user_2, user_3])
+    await _add_blog(async_session, name="Test blog3", likers=[user_1, user_2])
+
+    response_asc = await async_client.get(
+        f"/blogs?limit=10&offset=0&sort_by=likers&sort_order=ascending",
+    )
+    response_dsc = await async_client.get(
+        f"/blogs?limit=10&offset=0&sort_by=likers&sort_order=descending",
+    )
+
+    assert response_asc.status_code == status.HTTP_200_OK
+    assert response_dsc.status_code == status.HTTP_200_OK
+    order_asc = [blog for blog in response_asc.json()["data"]]
+    order_dsc = [blog for blog in response_dsc.json()["data"]]
+    assert order_asc != order_dsc
+
+
 async def test__list_blogs_200_sort_name(
     async_client: AsyncClient,
     async_session,
@@ -184,6 +236,59 @@ async def test__list_blogs_200_search_name(
     assert response.status_code == status.HTTP_200_OK
     blogs = [blog["name"] for blog in response.json()["data"]]
     assert "ccc" not in blogs
+
+
+async def test__list_blogs_200_search_active_only(
+    async_client: AsyncClient,
+    async_session,
+):
+    await _add_blog(async_session, name="active_only_aaa", archived=False)
+    await _add_blog(async_session, name="active_only_bbb", archived=False)
+    await _add_blog(async_session, name="active_only_ccc", archived=True)
+
+    response = await async_client.get(
+        f"/blogs?limit=10&offset=0&archived=false&blog_name=active_only",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    blogs = [blog["name"] for blog in response.json()["data"]]
+    assert "active_only_ccc" not in blogs
+
+
+async def test__list_blogs_200_search_archived_only(
+    async_client: AsyncClient,
+    async_session,
+):
+    await _add_blog(async_session, name="archive_only_aaa", archived=True)
+    await _add_blog(async_session, name="archive_only_bbb", archived=True)
+    await _add_blog(async_session, name="archive_only_ccc", archived=False)
+
+    response = await async_client.get(
+        f"/blogs?limit=10&offset=0&archived=true&blog_name=archive_",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    blogs = [blog["name"] for blog in response.json()["data"]]
+    assert "archive_only_ccc" not in blogs
+
+
+async def test__list_blogs_200_search_active_archived(
+    async_client: AsyncClient,
+    async_session,
+):
+    await _add_blog(async_session, name="both_aaa", archived=False)
+    await _add_blog(async_session, name="both_bbb", archived=False)
+    await _add_blog(async_session, name="both_ccc", archived=True)
+
+    response = await async_client.get(
+        f"/blogs?limit=10&offset=0&blog_name=both_",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    blogs = [blog["name"] for blog in response.json()["data"]]
+    assert "both_aaa" in blogs
+    assert "both_bbb" in blogs
+    assert "both_ccc" in blogs
 
 
 async def test__list_blogs_200_search_author(
