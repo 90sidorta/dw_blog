@@ -10,12 +10,12 @@ from dw_blog.routers.category import router as category_router
 
 app = FastAPI()
 
-app.include_router(user_router, tags=["Users"], prefix="/users")
 app.include_router(auth_router, tags=["Auth"], prefix="/auth")
-app.include_router(post_router, tags=["Posts"], prefix="/posts")
+app.include_router(user_router, tags=["Users"], prefix="/users")
+app.include_router(category_router, tags=["Categories"], prefix="/categories")
 app.include_router(blog_router, tags=["Blogs"], prefix="/blogs")
 app.include_router(tag_router, tags=["Tags"], prefix="/tags")
-app.include_router(category_router, tags=["Categories"], prefix="/categories")
+app.include_router(post_router, tags=["Posts"], prefix="/posts")
 
 
 @app.on_event("startup")

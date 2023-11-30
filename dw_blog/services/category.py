@@ -1,16 +1,19 @@
 from datetime import datetime
 from uuid import UUID
+from typing import Optional, Union, List
 
 from fastapi import Depends
 from sqlmodel import Session
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
+from dw_blog.models.common import SortOrder
 from dw_blog.exceptions.category import CategoryFailedAdd, CategoryNotFound
+from dw_blog.exceptions.common import PaginationLimitSurpassed
 from dw_blog.models.auth import AuthUser
-from dw_blog.models.category import Category, CategoryRead, CategoryBlogRead
+from dw_blog.models.category import Category, CategoryRead, CategoryBlogRead, SortCategoryBy, CategoryReadList
 from dw_blog.models.user import User, UserType
-from dw_blog.queries.category import get_single_category_query
+from dw_blog.queries.category import get_single_category_query, get_listed_categories_query
 
 
 
@@ -86,6 +89,48 @@ class CategoryService:
                 for blog_id, blog_name in (zip(category.blog_ids, category.blog_names))
             ]
         )
+
+    async def list(
+        self,
+        limit: int,
+        offset: int,
+        category_name: Optional[str] = None,
+        approved: Optional[bool] = True,
+        sort_order: SortOrder = SortOrder.ascending,
+        sort_by: SortCategoryBy = SortCategoryBy.date_created,
+    ) -> Union[List[CategoryReadList], int]:
+        """Get listed categories based - either all or based on category_name or approved
+        Args:
+            limit [int]: up to how many results per page
+            offset [int]: how many records should be skipped
+            category_name (Optional[str], optional): Name of the category. Defaults to None.
+            approved (Optional[bool], approved): If the categories should be approved. Defaults to True.
+        Raises:
+            BlogNotFound: raised if no blog matching criteria exists
+            PaginationLimitSurpassed: raised if limit was suprassed
+        Returns:
+            List[BlogRead]: List of blogs matching users criteria
+        """
+        # Check limit
+        if limit > 20:
+            raise PaginationLimitSurpassed()
+
+        # Create query
+        q_pag, q_all = get_listed_categories_query(
+            limit=limit,
+            offset=offset,
+            category_name=category_name,
+            approved=approved,
+            sort_order=sort_order,
+            sort_by=sort_by,
+        )
+        # Execute queries with and without limit
+        category_result = await self.db_session.exec(q_pag)
+        all_result = await self.db_session.exec(q_all)
+        categories = category_result.fetchall()
+        total = all_result.fetchall()
+
+        return categories, len(total)
 
 async def get_category_service(session: AsyncSession = Depends(get_session)):
     yield CategoryService(session)
