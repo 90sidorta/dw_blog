@@ -398,7 +398,7 @@ async def test__add_blog_authors_403_not_your_blog(
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.json()["detail"] == f"Blog {blog_1.id} does not belong to you!"
+    assert response.json()["detail"] == "To perform author addition you need either to be an admin or author of the blog!"
 
 
 async def test__add_blog_authors_400_already_five_authors(
@@ -547,7 +547,7 @@ async def test__remove_blog_author_403_not_your_blog(
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.json()["detail"] == f"Blog {blog_1.id} does not belong to you!"
+    assert response.json()["detail"] == "To perform author removal you need either to be an admin or author of the blog!"
 
 
 async def test__remove_blog_author_422_nonexisting_user(
@@ -856,7 +856,7 @@ async def test__update_blog_403_other_user_blog(
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.json()["detail"] == f"Blog {blog_1.id} does not belong to you!"
+    assert response.json()["detail"] == "To perform blog update you need either to be an admin or author of the blog!"
 
 
 async def test__update_blog_404_nonexistent_blog(
@@ -902,4 +902,4 @@ async def test__delete_blog_403_other_user_blog(
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.json()["detail"] == f"Blog {blog_1.id} does not belong to you!"
+    assert response.json()["detail"] == "To perform blog deletion you need either to be an admin or author of the blog!"
