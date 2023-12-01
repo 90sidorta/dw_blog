@@ -14,6 +14,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from dw_blog.config import Settings
 from dw_blog.db.db import get_session
 from dw_blog.models.blog import BlogAuthors, BlogLikes, BlogSubscribers
+from dw_blog.models.category import CategoryBlogs
 from dw_blog.models.common import UserType
 from dw_blog.models.user import User
 from dw_blog.utils.auth import create_access_token
@@ -134,6 +135,13 @@ async def _add_likers_to_blog(db_session, user_id: UUID, blog_id: UUID):
 
 async def _add_category(db_session, **kwargs):
     cat = CategoryFactory(**kwargs)
+    db_session.add(cat)
+    await db_session.commit()
+    return cat
+
+
+async def _add_blog_to_category(db_session, category_id: UUID, blog_id: UUID):
+    cat = CategoryBlogs(category_id=category_id, blog_id=blog_id)
     db_session.add(cat)
     await db_session.commit()
     return cat

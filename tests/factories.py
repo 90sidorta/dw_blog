@@ -39,6 +39,7 @@ class CategoryFactory(factory.Factory):
         model = Category
 
     id = factory.Faker("uuid4")
+    approved = True
     name = factory.Sequence(lambda n: f"Category_name_{n}")
     date_created = datetime.now()
     date_modified = datetime.now()

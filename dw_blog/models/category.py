@@ -65,6 +65,7 @@ class CategoryBlogRead(SQLModel):
 
 class CategoryRead(SQLModel):
     id: uuid.UUID
+    name: str
     date_created: datetime
     date_modified: datetime
     approved: bool

@@ -8,8 +8,9 @@ from dw_blog.models.common import ErrorModel, Pagination, Sort, SortOrder
 from dw_blog.models.category import CategoryCreate, CategoryRead, SortCategoryBy, ReadCategoriesPagination, CategoryUpdate
 from dw_blog.services.category import CategoryService, get_category_service
 from dw_blog.utils.auth import get_current_user
+from errors import RouteErrorHandler
 
-router = APIRouter()
+router = APIRouter(route_class=RouteErrorHandler)
 
 
 @router.post(
@@ -77,6 +78,7 @@ async def list_categories(
     sort_by: SortCategoryBy = SortCategoryBy.blogs_with_most_likes,
     category_service: CategoryService = Depends(get_category_service),
 ):
+    # There might be a bug here regarding sorting by blog with most likes
     data, total = await category_service.list(
         limit=limit,
         offset=offset,
