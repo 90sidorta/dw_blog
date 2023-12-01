@@ -105,10 +105,9 @@ class CategoryService:
             category_name (Optional[str], optional): Name of the category. Defaults to None.
             approved (Optional[bool], approved): If the categories should be approved. Defaults to True.
         Raises:
-            BlogNotFound: raised if no blog matching criteria exists
             PaginationLimitSurpassed: raised if limit was suprassed
         Returns:
-            List[BlogRead]: List of blogs matching users criteria
+            Union[List[CategoryReadList], id]: List of categories with count of blogs
         """
         # Check limit
         if limit > 20:
