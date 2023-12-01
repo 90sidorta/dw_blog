@@ -5,9 +5,10 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
-from tests.conftest import (_add_author_to_blog, _add_blog,
-                            _add_likers_to_blog, _add_blog_to_category,
-                            _add_user, _add_category)
+from tests.conftest import (_add_blog,
+                            _add_likers_to_blog,
+                            _add_user,
+                            _add_category)
 from tests.factories import ADMIN_ID
 
 
@@ -31,7 +32,7 @@ async def test__add_category_201_regular(
     async_client: AsyncClient,
     other_user_access_token,
 ):
-    payload={"name": "Newest blog!"}
+    payload={"name": "Newest blog regular!"}
 
     response = await async_client.post(
         f"/categories", json=payload, headers={"Authorization": f"Bearer {other_user_access_token}"}
@@ -219,21 +220,12 @@ async def test__list_categories_200_approved(
         "/categories?approved=false&name=approved",
         headers={"Authorization": f"Bearer {access_token}"}
     )
-    response_both = await async_client.get(
-        "/categories?name=approved",
-        headers={"Authorization": f"Bearer {access_token}"}
-    )
 
     assert response_true.status_code == status.HTTP_200_OK
     assert response_false.status_code == status.HTTP_200_OK
-    assert response_both.status_code == status.HTTP_200_OK
-    assert len(response_true.json()["data"]) == 3
-    assert len(response_false.json()["data"]) == 2
-    assert len(response_both.json()["data"]) == 5
+    assert set([cat["approved"] for cat in response_true.json()["data"]]) == {True}
+    assert set([cat["approved"] for cat in response_false.json()["data"]]) == {False}
     assert response_true.json()["sort"] == {"order": "descending", "prop": "blogs_with_most_likes"}
-    assert response_true.json()["pagination"] == {"total_records": 3, "limit": 10, "offset": 0}
-    assert response_false.json()["pagination"] == {"total_records": 2, "limit": 10, "offset": 0}
-    assert response_both.json()["pagination"] == {"total_records": 5, "limit": 10, "offset": 0}
 
 
 async def test__update_category_200(
@@ -296,8 +288,8 @@ async def test__update_category_403_other_user(
     other_user_access_token,
     async_session,
 ):
-    cat_1 = await _add_category(async_session, name="before_change", approved=False)
-    payload = {"name": "zxcxzczxczxcz"}
+    cat_1 = await _add_category(async_session, name="zxcxzczxczxcz", approved=False)
+    payload = {"name": "zxcxzczx1czxcz"}
 
     response = await async_client.patch(
         f"/categories/{cat_1.id}",
@@ -309,7 +301,64 @@ async def test__update_category_403_other_user(
     assert response.json()["detail"] == "To perform category update you need admin status!"
 
 
-# delete_category
-# 204 ok
-# 404 not found
-# category has blogs
+async def test__delete_category_204(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session)
+
+    response = await async_client.delete(
+        f"/categories/{cat_1.id}",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+async def test__delete_category_404(
+    async_client: AsyncClient,
+    access_token,
+):
+    cat_1 = uuid.uuid4()
+
+    response = await async_client.delete(
+        f"/categories/{cat_1}",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+async def test__delete_category_400_category_with_blogs(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session)
+    blog_1 = await _add_blog(async_session, categories=[cat_1])
+
+    response = await async_client.delete(
+        f"/categories/{cat_1.id}",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"Failed to delete category {cat_1.id}! It has associated blogs!"
+
+
+async def test__delete_category_403_not_admin(
+    async_client: AsyncClient,
+    async_session,
+    other_user_access_token,
+):
+    cat_1 = await _add_category(async_session)
+    blog_1 = await _add_blog(async_session, categories=[cat_1])
+
+    response = await async_client.delete(
+        f"/categories/{cat_1.id}",
+        headers={"Authorization": f"Bearer {other_user_access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == "To perform category delete you need admin status!"

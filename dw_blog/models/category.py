@@ -89,8 +89,12 @@ class ReadCategoriesPagination(SQLModel):
 
 
 class CategoryUpdate(CategoryCreate):
-    approved: Optional[bool]
-    name: Optional[str]
+    approved: Optional[bool] 
+    name: Optional[str] = Field(
+        min_length=3,
+        max_length=500,
+        nullable=True,
+    )
 
 
 class CategoryDelete(CategoryRead):

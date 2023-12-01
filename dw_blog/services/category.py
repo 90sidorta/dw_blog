@@ -175,8 +175,12 @@ class CategoryService:
         if user.user_type is not UserType.admin:
             raise AdminStatusRequired(operation="category update")
 
-        # Update category name
+        # Get category to update
         update_category = await self.db_session.get(Category, category_id)
+        if update_category is None:
+            raise CategoryNotFound(category_id=category_id)
+
+        # Update category name
         if name:
             update_category.name = name
 
@@ -207,7 +211,12 @@ class CategoryService:
         # Check if user is an admin
         user: User = await self.db_session.get(User, current_user["user_id"])
         if user.user_type is not UserType.admin:
-            raise AdminStatusRequired(operation="blog delete")
+            raise AdminStatusRequired(operation="category delete")
+
+        # Get category to update
+        delete_category = await self.db_session.get(Category, category_id)
+        if delete_category is None:
+            raise CategoryNotFound(category_id=category_id)
 
         # Check if category has blogs
         q_category_blogs = get_blogs_for_category_query(category_id=category_id)
@@ -217,8 +226,6 @@ class CategoryService:
             raise CategoryHasBlogs(category_id=category_id)
 
         # Delete category
-        delete_category = await self.db_session.get(Category, category_id)
-
         try:
             self.db_session.delete(delete_category)
             await self.db_session.commit()
