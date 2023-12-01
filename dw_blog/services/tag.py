@@ -38,7 +38,7 @@ class TagService:
             TagRead: readable tag data
         """
         # Check if user is author of the blog
-        await self.blog_service.check_blog(
+        await self.blog_service.check_blog_permissions(
             blog_id=blog_id,
             current_user=current_user,
         )

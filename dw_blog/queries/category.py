@@ -113,3 +113,13 @@ def get_listed_categories_query(
 
     return q_pag, q_all
 
+
+def get_blogs_for_category_query(category_id: UUID):
+    q = (
+            select(
+                CategoryBlogs.blog_id
+            )
+            .where(CategoryBlogs.category_id == category_id)
+            .group_by(CategoryBlogs.blog_id)
+    )
+    return q

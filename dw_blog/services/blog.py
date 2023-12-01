@@ -9,16 +9,14 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from dw_blog.db.db import get_session
 from dw_blog.exceptions.blog import (BlogAlreadyAuthor, BlogAlreadyLiked,
                                      BlogAlreadySubscribed, BlogArchived,
-                                     BlogAuthorsAddFail,
+                                     BlogActionFail,
                                      BlogAuthorsLimitReached,
-                                     BlogDeleteAuthorFail, BlogDeleteFail,
-                                     BlogFailedAdd, BlogLastAuthor,
-                                     BlogLikeFail, BlogLimitReached,
+                                     BlogLastAuthor,
+                                     BlogLimitReached,
                                      BlogNotAuthor, BlogNotFound, BlogNotLiked,
-                                     BlogNotSubscribed, BlogNotYours,
-                                     BlogSubscribtionFail, BlogUnlikeFail,
-                                     BlogUnsubscribtionFail, BlogUpdateFail)
-from dw_blog.exceptions.common import ListException, PaginationLimitSurpassed
+                                     BlogNotSubscribed,
+                                    )
+from dw_blog.exceptions.common import ListException, PaginationLimitSurpassed, AdminOrAuthorRequired, EntityFailedAdd, EntityUpdateFail, EntityDeleteFail
 from dw_blog.exceptions.user import UserNotFound
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.blog import (Blog, BlogAuthor, BlogAuthors, BlogLiker,
@@ -65,7 +63,7 @@ class BlogService:
             categories_id (List[UUID]): list of categories id
         Raises:
             BlogLimitReached: raised if user already has 3 blogs
-            FailedBlogAdd: raised if blog addition failed
+            EntityFailedAdd: raised if blog addition failed
         Returns:
             BlogRead: Created blog with author data
         """
@@ -93,7 +91,7 @@ class BlogService:
             await self.db_session.commit()
             await self.db_session.refresh(blog)
         except Exception:
-            raise BlogFailedAdd()
+            raise EntityFailedAdd(entity_name="blog")
 
         # Return created blog
         blog_read = await self.get(blog_id=blog.id)
@@ -193,10 +191,11 @@ class BlogService:
 
         return blogs, len(total)
 
-    async def check_blog(
+    async def check_blog_permissions(
         self,
         blog_id: UUID,
         current_user: AuthUser,
+        operation: str
     ):
         """Checks if user trying to modify blog is either
         an author or an admin
@@ -213,7 +212,7 @@ class BlogService:
         for author in blog.authors:
             authors_ids.append(author.author_id)
         if current_user["user_id"] not in authors_ids and current_user["user_type"] != UserType.admin:
-            raise BlogNotYours(blog_id=blog_id)
+            raise AdminOrAuthorRequired(operation=operation, entity="blog")
 
     async def is_author_already(
         self,
@@ -253,9 +252,10 @@ class BlogService:
         Returns:
             BlogRead: Blog data with authors details
         """
-        await self.check_blog(
+        await self.check_blog_permissions(
             blog_id=blog_id,
             current_user=current_user,
+            operation="author addition",
         )
         # Check if blog already reached limit of five authors
         q = select(BlogAuthors).where(BlogAuthors.blog_id == blog_id)
@@ -295,7 +295,7 @@ class BlogService:
                 self.db_session.add(blog_author)
             await self.db_session.commit()
         except Exception:
-            raise BlogAuthorsAddFail()
+            raise BlogActionFail(blog_id=blog_id, action="add author(s)")
 
         blog_read = await self.get(blog_id=blog_id)
         return blog_read
@@ -315,14 +315,15 @@ class BlogService:
         Raises:
             BlogLastAuthor: raised if user to be removed
             is blogs last author
-            BlogDeleteAuthorFail: raised if blogs author
+            BlogActionFail: raised if blogs author
             removal failed
         Returns:
             BlogRead: blog with authors data
         """
-        await self.check_blog(
+        await self.check_blog_permissions(
             blog_id=blog_id,
             current_user=current_user,
+            operation="author removal",
         )
 
         # Raise error if user not an author
@@ -343,7 +344,7 @@ class BlogService:
             await self.db_session.exec(q)
             await self.db_session.commit()
         except Exception:
-            raise BlogDeleteAuthorFail()
+            raise BlogActionFail(blog_id=blog_id, action="remove author")
 
         return await self.get(blog_id=blog_id)
 
@@ -401,7 +402,7 @@ class BlogService:
         Raises:
             BlogAlreadySubscribed: raised if blog is already
             subscribed by the user
-            BlogSubscribtionFail: raised if blog subscription
+            BlogActionFail: raised if blog subscription
             failed
         Returns:
             BlogRead: blog data
@@ -423,7 +424,7 @@ class BlogService:
             await self.db_session.commit()
             await self.db_session.refresh(subscription)
         except Exception:
-            raise BlogSubscribtionFail()
+            raise BlogActionFail(blog_id=blog_id, action="add subscription")
 
         return await self.get(blog_id=blog_id)
 
@@ -439,7 +440,7 @@ class BlogService:
         Raises:
             BlogNotSubscribed: raised if blog was not
             subscribed by the user
-            BlogUnsubscribtionFail: raised if any exception
+            BlogActionFail: raised if any exception
             occured in the process
         Returns:
             BlogRead: blog data
@@ -456,7 +457,7 @@ class BlogService:
             await self.db_session.delete(already_subscribes)
             await self.db_session.commit()
         except Exception:
-            raise BlogUnsubscribtionFail()
+            raise BlogActionFail(blog_id=blog_id, action="remove subscription")
         return await self.get(blog_id=blog_id)
 
     async def like(
@@ -470,7 +471,7 @@ class BlogService:
             current_user (AuthUser): current user object
         Raises:
             BlogAlreadyLiked: raised if blog already liked
-            BlogLikeFail: raised if operation failed
+            BlogActionFail: raised if operation failed
         Returns:
             BlogRead: blog data
         """
@@ -491,7 +492,7 @@ class BlogService:
             await self.db_session.commit()
             await self.db_session.refresh(like)
         except Exception:
-            raise BlogLikeFail()
+            raise BlogActionFail(blog_id=blog_id, action="add like")
 
         return await self.get(blog_id=blog_id)
 
@@ -506,7 +507,7 @@ class BlogService:
             current_user (AuthUser): current user object
         Raises:
             BlogNotLiked: raised if blog was not liked by the user
-            BlogUnlikeFail: raised if blog like process failed
+            BlogActionFail: raised if blog like process failed
         Returns:
             BlogRead: blog data
         """
@@ -522,7 +523,7 @@ class BlogService:
             await self.db_session.delete(already_likes)
             await self.db_session.commit()
         except Exception:
-            raise BlogUnlikeFail()
+            raise BlogActionFail(blog_id=blog_id, action="remove like")
         return await self.get(blog_id=blog_id)
 
     async def update(
@@ -541,14 +542,15 @@ class BlogService:
             archived (bool): archive the blog
             categories_id (List[UUID]): list of categories id
         Raises:
-            BlogUpdateFail: raised if blog update failed
+            EntityUpdateFail: raised if blog update failed
         Returns:
             BlogRead: Read blog with author data
         """
         # TODO: add an option to update categories of the blog
-        await self.check_blog(
+        await self.check_blog_permissions(
             blog_id=blog_id,
             current_user=current_user,
+            operation="blog update"
         )
 
         # Update blog name
@@ -564,7 +566,7 @@ class BlogService:
             self.db_session.add(update_blog)
             await self.db_session.commit()
         except Exception:
-            raise BlogUpdateFail(blog_id=blog_id)
+            raise EntityUpdateFail(entity_id=blog_id, entity_name="blog")
 
         return await self.get(blog_id=blog_id)
 
@@ -579,20 +581,21 @@ class BlogService:
             current_user (AuthUser): current user object
 
         Raises:
-            BlogDeleteFail: sed if blog delete fails
+            EntityDeleteFail: sed if blog delete fails
         """
-        await self.check_blog(
+        await self.check_blog_permissions(
             blog_id=blog_id,
             current_user=current_user,
+            operation="blog deletion"
         )
 
         # Delete blog
         delete_blog = await self.db_session.get(Blog, blog_id)
         try:
             self.db_session.delete(delete_blog)
-            self.db_session.commit()
+            await self.db_session.commit()
         except Exception:
-            raise BlogDeleteFail()
+            raise EntityDeleteFail(entity_id=blog_id, entity_name="blog")
 
 
 async def get_blog_service(session: AsyncSession = Depends(get_session)):
