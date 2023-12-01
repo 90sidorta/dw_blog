@@ -10,7 +10,6 @@ from tests.conftest import (_add_author_to_blog, _add_blog,
                             _add_user, _add_category)
 from tests.factories import ADMIN_ID
 
-print("+++++++++++++++++++++++++")
 
 @pytest.mark.asyncio
 async def test__add_category_201_admin(
@@ -178,7 +177,9 @@ async def test__list_categories_200_sort_by_blog_likes_count(
     access_token,
     async_session,
 ):
-    blog_1 = await _add_blog(async_session, name="Test1", likers=[])
+    user_1 = await _add_user(async_session)
+    user_2 = await _add_user(async_session)
+    blog_1 = await _add_blog(async_session, name="Test1", likers=[user_1, user_2])
     blog_2 = await _add_blog(async_session, name="Test2", likers=[])
     _add_likers_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
 
@@ -199,17 +200,116 @@ async def test__list_categories_200_sort_by_blog_likes_count(
     assert order_asc != order_dsc
 
 
+async def test__list_categories_200_approved(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    await _add_category(async_session, name="approved1",approved=True)
+    await _add_category(async_session, name="approved2",approved=True)
+    await _add_category(async_session, name="approved3",approved=False)
+    await _add_category(async_session, name="approved4",approved=True)
+    await _add_category(async_session, name="approved5",approved=False)
 
-# list_categories
-# 200, regular pagination
-# 200, search by cat name
-# 200, search if approved, not approved, both
-# 200 sort by blog likes, asc desc
-# update_category
-# 404, not found
-# 400 invalid name
-# 403, not admin
-# change approve and name 200
+    response_true = await async_client.get(
+        "/categories?approved=true&name=approved",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    response_false = await async_client.get(
+        "/categories?approved=false&name=approved",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    response_both = await async_client.get(
+        "/categories?name=approved",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response_true.status_code == status.HTTP_200_OK
+    assert response_false.status_code == status.HTTP_200_OK
+    assert response_both.status_code == status.HTTP_200_OK
+    assert len(response_true.json()["data"]) == 3
+    assert len(response_false.json()["data"]) == 2
+    assert len(response_both.json()["data"]) == 5
+    assert response_true.json()["sort"] == {"order": "descending", "prop": "blogs_with_most_likes"}
+    assert response_true.json()["pagination"] == {"total_records": 3, "limit": 10, "offset": 0}
+    assert response_false.json()["pagination"] == {"total_records": 2, "limit": 10, "offset": 0}
+    assert response_both.json()["pagination"] == {"total_records": 5, "limit": 10, "offset": 0}
+
+
+async def test__update_category_200(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="before_change", approved=False)
+    payload = {"name": "after_change", "approved": True}
+
+    response = await async_client.patch(
+        f"/categories/{cat_1.id}",
+        json=payload,
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["name"] == payload["name"]
+    assert response.json()["approved"] == payload["approved"]
+
+
+async def test__update_category_404_nonexistent_category(
+    async_client: AsyncClient,
+    access_token,
+):
+    cat_1 = uuid.uuid4()
+    payload = {"name": "after_change", "approved": True}
+
+    response = await async_client.patch(
+        f"/categories/{cat_1}",
+        json=payload,
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Failed to fetch category {cat_1}!"
+
+
+async def test__update_category_400_invalid_name(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="before_change", approved=False)
+    payload = {"name": "af"}
+
+    response = await async_client.patch(
+        f"/categories/{cat_1.id}",
+        json=payload,
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.json()["detail"] == "Validation error: ensure this value has at least 3 characters!"
+    assert response.json()["location"] == "name"
+
+
+async def test__update_category_403_other_user(
+    async_client: AsyncClient,
+    other_user_access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="before_change", approved=False)
+    payload = {"name": "zxcxzczxczxcz"}
+
+    response = await async_client.patch(
+        f"/categories/{cat_1.id}",
+        json=payload,
+        headers={"Authorization": f"Bearer {other_user_access_token}"}
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == "To perform category update you need admin status!"
+
+
 # delete_category
 # 204 ok
 # 404 not found
+# category has blogs

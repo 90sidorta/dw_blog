@@ -94,7 +94,7 @@ class CategoryService:
         limit: int,
         offset: int,
         category_name: Optional[str] = None,
-        approved: Optional[bool] = True,
+        approved: Optional[bool] = None,
         sort_order: SortOrder = SortOrder.ascending,
         sort_by: SortCategoryBy = SortCategoryBy.date_created,
     ) -> Union[List[CategoryReadList], int]:
@@ -173,7 +173,7 @@ class CategoryService:
         # Check if user is an admin
         user: User = await self.db_session.get(User, current_user["user_id"])
         if user.user_type is not UserType.admin:
-            raise AdminStatusRequired(operation="blog update")
+            raise AdminStatusRequired(operation="category update")
 
         # Update category name
         update_category = await self.db_session.get(Category, category_id)
@@ -182,7 +182,7 @@ class CategoryService:
 
         # Update category status
         if approved:
-            update_category.archived = approved
+            update_category.approved = approved
 
         try:
             self.db_session.add(update_category)

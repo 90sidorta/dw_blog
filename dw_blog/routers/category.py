@@ -73,12 +73,11 @@ async def list_categories(
     limit: int = 10,
     offset: int = 0,
     category_name: Optional[str] = None,
-    approved: Optional[bool] = True,
+    approved: Optional[bool] = None,
     sort_order: SortOrder = SortOrder.descending,
     sort_by: SortCategoryBy = SortCategoryBy.blogs_with_most_likes,
     category_service: CategoryService = Depends(get_category_service),
 ):
-    # There might be a bug here regarding sorting by blog with most likes
     data, total = await category_service.list(
         limit=limit,
         offset=offset,
