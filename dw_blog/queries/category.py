@@ -8,6 +8,8 @@ from dw_blog.models.common import SortOrder
 from dw_blog.models.blog import Blog, BlogLikes
 
 
+CategoryBlogsBlogId = CategoryBlogs.__table__.alias()
+
 def get_single_category_query(category_id: UUID):
     q = (
             select(
@@ -35,8 +37,7 @@ def get_listed_categories_query(
     sort_order: SortOrder = SortOrder.ascending,
     sort_by: SortCategoryBy = SortCategoryBy.date_created,
 ):
-    # TODO: implement sort by most blogs asc desc
-    # Create query
+    # Create subquery
     subquery = (
         select(
             Blog.id,
@@ -53,6 +54,7 @@ def get_listed_categories_query(
         .lateral()
     ).alias('subquery')
 
+    # Create query
     q = (
         select(
             Category.id,
@@ -60,10 +62,12 @@ def get_listed_categories_query(
             Category.approved,
             Category.date_created,
             Category.date_modified,
-            func.array_agg(subquery.c.id).label('blog_ids'),
-            func.array_agg(subquery.c.name).label('blog_names'),
+            func.array_agg(func.distinct(subquery.c.id)).label('blog_ids'),
+            func.array_agg(func.distinct(subquery.c.name)).label('blog_names'),
+            func.count(func.distinct(CategoryBlogsBlogId.c.blog_id)).label('blogs_count')
         )
         .select_from(Category)
+        .join(CategoryBlogsBlogId, CategoryBlogsBlogId.c.category_id == Category.id, isouter=True)
         .join(subquery, text('true'), isouter=True)
         .group_by(Category.id)
     )
@@ -81,6 +85,14 @@ def get_listed_categories_query(
             q = q.order_by(sort_most_likes)
         if sort_order == SortOrder.descending:
             q = q.order_by(sort_most_likes.desc())
+
+    # Create sorting by most blogs
+    if sort_by == SortCategoryBy.most_blogs:
+        sort_most_blogs = func.count(func.distinct(CategoryBlogsBlogId.c.blog_id))
+        if sort_order == SortOrder.ascending:
+            q = q.order_by(sort_most_blogs)
+        if sort_order == SortOrder.descending:
+            q = q.order_by(sort_most_blogs.desc())
 
     # Create sorting by date created
     if sort_by == SortCategoryBy.date_created:

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, status
 
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.common import ErrorModel, Pagination, Sort, SortOrder
-from dw_blog.models.category import CategoryCreate, CategoryRead, SortCategoryBy, ReadCategoriesPagination
+from dw_blog.models.category import CategoryCreate, CategoryRead, SortCategoryBy, ReadCategoriesPagination, CategoryReadList, CategoryBlogRead
 from dw_blog.services.category import CategoryService, get_category_service
 from dw_blog.utils.auth import get_current_user
 
@@ -55,7 +55,7 @@ async def get_category(
 
 @router.get(
     "",
-    # response_model=ReadBlogsPagination,
+    response_model=ReadCategoriesPagination,
     status_code=status.HTTP_200_OK,
     responses={
         400: {"model": ErrorModel},
@@ -65,7 +65,7 @@ async def get_category(
     summary="Get list of categories",
     description="""Get list of categories with blog information.
     Categories can be searched on the basis of their name, popularity
-    of blogs (subscribers and likers) and number of blogs.
+    of blogs (likers) and number of blogs.
     """,
 )
 async def list_categories(
@@ -85,20 +85,32 @@ async def list_categories(
         sort_order=sort_order,
         sort_by=sort_by,
     )
-    for cat in listed_categories:
-        print("++++++++++++")
-        print(cat)
-        print("++++++++++++")
-    # return ReadCategoriesPagination(
-    #     data=listed_categories,
-    #     pagination=Pagination(
-    #         total_records=total,
-    #         limit=limit,
-    #         offset=offset,
-    #     ),
-    #     sort=Sort(
-    #         order=sort_order,
-    #         prop=sort_by,
-    #     ),
-    # )
-    return True
+    return ReadCategoriesPagination(
+        data=[
+            CategoryReadList(
+                id=single_category.id,
+                approved=single_category.approved,
+                blogs=[
+                    CategoryBlogRead(
+                        blog_id=blog_id,
+                        blog_name=blog_name
+                    ) for blog_id, blog_name in zip(
+                        single_category.blog_ids,
+                        single_category.blog_names
+                    )
+                ],
+                blogs_count=single_category.blogs_count,
+                name=single_category.name,
+                date_created=single_category.date_created,
+                date_modified=single_category.date_modified,
+            ) for single_category in listed_categories],
+        pagination=Pagination(
+            total_records=total,
+            limit=limit,
+            offset=offset,
+        ),
+        sort=Sort(
+            order=sort_order,
+            prop=sort_by,
+        ),
+    )
