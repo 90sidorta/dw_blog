@@ -1,3 +1,2 @@
-- Add whole categories module
-- Add listing blogs by categories
 - Add update blogs category (up to 3 categories per blog)
+- Add tag module

@@ -97,3 +97,11 @@ class BlogNotLiked(HTTPException):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"You did not like blog {blog_id}!",
         )
+
+
+class BlogCategoryLimit(HTTPException):
+    def __init__(self, blog_id: UUID, blog_categories_already: int):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Blog {blog_id} already has {blog_categories_already} categories! Blog can only have up to three!",
+        )

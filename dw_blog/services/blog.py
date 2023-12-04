@@ -11,7 +11,7 @@ from dw_blog.exceptions.blog import (BlogAlreadyAuthor, BlogAlreadyLiked,
                                      BlogAlreadySubscribed, BlogArchived,
                                      BlogActionFail,
                                      BlogAuthorsLimitReached,
-                                     BlogLastAuthor,
+                                     BlogLastAuthor, BlogCategoryLimit,
                                      BlogLimitReached,
                                      BlogNotAuthor, BlogNotFound, BlogNotLiked,
                                      BlogNotSubscribed,
@@ -154,6 +154,7 @@ class BlogService:
         blog_name: Optional[str] = None,
         author_id: Optional[UUID] = None,
         archived: Optional[Union[bool, None]] = None,
+        categories_ids: Optional[List[UUID]] = None,
         sort_order: SortOrder = SortOrder.ascending,
         sort_by: SortBlogBy = SortBlogBy.date_created,
     ) -> Union[List[BlogReadList], int]:
@@ -180,6 +181,7 @@ class BlogService:
             blog_name=blog_name,
             author_id=author_id,
             archived=archived,
+            categories_ids=categories_ids,
             sort_order=sort_order,
             sort_by=sort_by,
         )
@@ -532,7 +534,7 @@ class BlogService:
         current_user: AuthUser,
         name: Optional[str] = None,
         archived: Optional[bool] = None,
-        categories_id: List[UUID] = [],
+        categories_id: List[UUID] = None,
     ) -> BlogRead:
         """Updates blog data
         Args:
@@ -554,13 +556,21 @@ class BlogService:
         )
 
         # Update blog name
-        update_blog = await self.db_session.get(Blog, blog_id)
+        update_blog: Blog = await self.db_session.get(Blog, blog_id)
         if name:
             update_blog.name = name
 
         # Update blog status
         if archived:
             update_blog.archived = archived
+
+        # # Update blog categories
+        # if categories_id:
+        #     blog_cats = update_blog.categories
+        #     if len(blog_cats) + len(categories_id) >= 3:
+        #         raise BlogCategoryLimit(blog_id=blog_id, blog_categories_already=len(blog_cats))
+        #     blog_cats.append(categories_id)
+        #     update_blog.categories = blog_cats
 
         try:
             self.db_session.add(update_blog)

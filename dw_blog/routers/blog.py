@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
 
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.blog import (BlogCreate, BlogRead, BlogUpdate,
@@ -75,6 +75,7 @@ async def list_blogs(
     blog_name: Optional[str] = None,
     author_id: Optional[UUID] = None,
     archived: Optional[Union[bool, None]] = None,
+    categories_ids: Optional[List[UUID]] = Query(None),
     sort_order: SortOrder = SortOrder.ascending,
     sort_by: SortBlogBy = SortBlogBy.date_created,
     blog_service: BlogService = Depends(get_blog_service),
@@ -85,6 +86,7 @@ async def list_blogs(
         blog_name=blog_name,
         author_id=author_id,
         archived=archived,
+        categories_ids=categories_ids,
         sort_order=sort_order,
         sort_by=sort_by,
     )

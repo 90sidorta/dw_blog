@@ -1,7 +1,8 @@
-from typing import Optional, Union
+from typing import Optional, Union, List
 from uuid import UUID
+from functools import reduce
 
-from sqlmodel import delete, func, select
+from sqlmodel import delete, func, select, or_, any_
 
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.blog import (Blog, BlogAuthors, BlogLikes, BlogSubscribers,
@@ -54,6 +55,7 @@ def get_listed_blogs_query(
     blog_name: Optional[str] = None,
     author_id: Optional[UUID] = None,
     archived: Optional[Union[bool, None]] = None,
+    categories_ids: Optional[List[UUID]] = None,
     sort_order: SortOrder = SortOrder.ascending,
     sort_by: SortBlogBy = SortBlogBy.date_created,
 ):
@@ -61,6 +63,7 @@ def get_listed_blogs_query(
     sub_q = (
         select(
             Blog.id.label("id"),
+            func.array_agg(func.distinct(Category.id)).label("categories_ids"),
             func.array_agg(func.distinct(Category.name)).label("categories_name"),
             Blog.archived.label("archived"),
             Blog.name.label("name"),
@@ -78,6 +81,7 @@ def get_listed_blogs_query(
     )
     q = select(
         sub_q.c.id,
+        sub_q.c.categories_ids,
         sub_q.c.categories_name,
         sub_q.c.archived,
         sub_q.c.name,
@@ -105,6 +109,11 @@ def get_listed_blogs_query(
             .join(User, onclause=User.id == BlogAuthors.author_id, isouter=True)
             .where(User.id == author_id)
         )
+
+    # Get records based on category id
+    if categories_ids:
+        conditions = [sub_q.c.categories_ids.any(category_id) for category_id in categories_ids]
+        q = q.where(or_(*conditions))
 
     # Create sorting
     if sort_by == SortBlogBy.date_created:
