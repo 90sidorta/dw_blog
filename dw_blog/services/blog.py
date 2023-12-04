@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import Depends
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -12,11 +13,19 @@ from dw_blog.exceptions.blog import (BlogAlreadyAuthor, BlogAlreadyLiked,
                                      BlogActionFail,
                                      BlogAuthorsLimitReached,
                                      BlogLastAuthor, BlogCategoryLimit,
-                                     BlogLimitReached,
+                                     BlogLimitReached, BlogAlreadyInCategory,
                                      BlogNotAuthor, BlogNotFound, BlogNotLiked,
                                      BlogNotSubscribed,
                                     )
-from dw_blog.exceptions.common import ListException, PaginationLimitSurpassed, AdminOrAuthorRequired, EntityFailedAdd, EntityUpdateFail, EntityDeleteFail
+from dw_blog.exceptions.category import CategoryNotFound
+from dw_blog.exceptions.common import (
+    ListException,
+    PaginationLimitSurpassed,
+    AdminOrAuthorRequired,
+    EntityFailedAdd,
+    EntityUpdateFail,
+    EntityDeleteFail,
+)
 from dw_blog.exceptions.user import UserNotFound
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.blog import (Blog, BlogAuthor, BlogAuthors, BlogLiker,
@@ -30,12 +39,14 @@ from dw_blog.queries.blog import (check_like_query, check_subscription_query,
                                   delete_author_query, get_listed_blogs_query,
                                   get_single_blog_query, is_author_query)
 from dw_blog.services.user import UserService
+from dw_blog.services.category import CategoryService
 
 
 class BlogService:
     def __init__(self, db_session: Session):
         self.db_session = db_session
         self.user_service = UserService(db_session)
+        self.category_service = CategoryService(db_session)
 
     async def check_author_blogs(self, user_id: UUID):
         """Checks if user has reachead limit of the blogs
@@ -556,7 +567,11 @@ class BlogService:
         )
 
         # Update blog name
-        update_blog: Blog = await self.db_session.get(Blog, blog_id)
+        q = (select(Blog).options(selectinload(Blog.categories)).where(Blog.id == blog_id))
+        if not (update_blog_results := await self.db_session.exec(q)):
+            raise BlogNotFound(blog_id=blog_id)
+        update_blog = update_blog_results.first()
+
         if name:
             update_blog.name = name
 
@@ -564,13 +579,17 @@ class BlogService:
         if archived:
             update_blog.archived = archived
 
-        # # Update blog categories
-        # if categories_id:
-        #     blog_cats = update_blog.categories
-        #     if len(blog_cats) + len(categories_id) >= 3:
-        #         raise BlogCategoryLimit(blog_id=blog_id, blog_categories_already=len(blog_cats))
-        #     blog_cats.append(categories_id)
-        #     update_blog.categories = blog_cats
+        # Update blog categories
+        if categories_id:
+            already_categories = [] if len(update_blog.categories) == 0 else [category.id for category in update_blog.categories]
+            if len(update_blog.categories) + len(categories_id) > 3:
+                raise BlogCategoryLimit(blog_id=blog_id, blog_categories_already=len(update_blog.categories))
+            for category_id in categories_id:
+                if category_id in already_categories:
+                    raise BlogAlreadyInCategory(category_id=category_id, blog_id=blog_id)
+                if not (adding_category := await self.db_session.get(Category, category_id)):
+                    raise CategoryNotFound(category_id=category_id)
+                update_blog.categories.append(adding_category)
 
         try:
             self.db_session.add(update_blog)

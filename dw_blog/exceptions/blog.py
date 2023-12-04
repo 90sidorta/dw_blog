@@ -105,3 +105,11 @@ class BlogCategoryLimit(HTTPException):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Blog {blog_id} already has {blog_categories_already} categories! Blog can only have up to three!",
         )
+
+
+class BlogAlreadyInCategory(HTTPException):
+    def __init__(self, blog_id: UUID, category_id: UUID):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Blog {blog_id} already belongs to category {category_id}!",
+        )
