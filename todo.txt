@@ -1,1 +1,4 @@
-- Add tag module
+- Add subscribed tags for users
+- Add tags tests
+- Add blogs category tests (list nad update)
+- Add blacklisting users and tags and hide blogs, tags, posts and comments

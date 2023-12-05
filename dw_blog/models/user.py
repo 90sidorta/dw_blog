@@ -4,6 +4,7 @@ from typing import List, Optional
 from sqlmodel import Field, Relationship, SQLModel
 
 from dw_blog.models.blog import Blog, BlogAuthors, BlogLikes, BlogSubscribers
+from dw_blog.models.tag import TagSubscribers, Tag
 # from dw_blog.models.category import Category, CategoryFavourite
 from dw_blog.models.common import UserType
 
@@ -48,6 +49,10 @@ class User(UserBase, table=True):
     subscribed_blogs: Optional[List[Blog]] = Relationship(
         back_populates="subscribers",
         link_model=BlogSubscribers,
+    )
+    subscribed_tags: Optional[List[Tag]] = Relationship(
+        back_populates="subscribers",
+        link_model=TagSubscribers,
     )
     # categories: Optional[List[Category]] = Relationship(
     #     back_populates="favouriters",

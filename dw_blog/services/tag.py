@@ -1,18 +1,20 @@
 from datetime import datetime
 from uuid import UUID
+from typing import Optional, Union, List
 
 from fastapi import Depends
-from sqlmodel import Session, select
+from sqlmodel import Session
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
-from dw_blog.exceptions.tag import (TagDeleteFail, TagFailedAdd, TagNotFound,
-                                    TagUpdateFail)
+from dw_blog.exceptions.tag import TagNotFound
+from dw_blog.exceptions.common import EntityUpdateFail, EntityDeleteFail, EntityFailedAdd, PaginationLimitSurpassed
 from dw_blog.models.auth import AuthUser
-from dw_blog.models.blog import Blog
-from dw_blog.models.tag import Tag, TagRead
+from dw_blog.models.tag import Tag, TagRead, TagReadList, SortTagBy
 from dw_blog.services.blog import BlogService
 from dw_blog.services.user import UserService
+from dw_blog.queries.tag import get_single_tag_query, get_listed_tags_query
+from dw_blog.models.common import SortOrder
 
 
 class TagService:
@@ -33,7 +35,7 @@ class TagService:
             blog_id (UUID): id of the blog
             name (str): name of the tag
         Raises:
-            TagFailedAdd: raised if tag addition failed
+            EntityFailedAdd: raised if tag addition failed
         Returns:
             TagRead: readable tag data
         """
@@ -56,12 +58,53 @@ class TagService:
             await self.db_session.commit()
             await self.db_session.refresh(tag)
         except Exception:
-            raise TagFailedAdd(
-                blog_id=blog_id,
-                tag_name=name,
-            )
+            raise EntityFailedAdd(entity_name="tag")
 
         return await self.get(tag_id=tag.id)
+
+    async def list(
+        self,
+        limit: int,
+        offset: int,
+        user_id: Optional[UUID] = None,
+        blog_id: Optional[UUID] = None,
+        sort_order: SortOrder = SortOrder.ascending,
+        sort_by: SortTagBy = SortTagBy.most_subscribers,
+    ) -> Union[List[TagReadList], int]:
+        """Get tags based on it's id
+        Args:
+            limit [int]: up to how many results per page
+            offset [int]: how many records should be skipped
+            user_id (Optional[UUID], optional): Id of the user to get its subscribed tags. Defaults to None.
+            blog_id (Optional[UUID], optional): Id of the blog to get its tags. Defaults to None.
+            sort_order [SortOrder]: order of sorting retrieved records. Defaults to ascending.
+            sort_by [SortTagBy]: prop to sort records by. Defaults to most_subscribers.
+        Raises:
+            PaginationLimitSurpassed: raised if limit was suprassed
+        Returns:
+            Union[List[TagReadList], int]: List of tags data and total count of tags
+        """
+        # Check limit
+        if limit > 20:
+            raise PaginationLimitSurpassed()
+        # Create query
+        q_pag, q_all = get_listed_tags_query(
+            limit=limit,
+            offset=offset,
+            user_id=user_id,
+            blog_id=blog_id,
+            sort_order=sort_order,
+            sort_by=sort_by,
+        )
+
+        # Execute queries with and without limit
+        tags_result = await self.db_session.exec(q_pag)
+        all_result = await self.db_session.exec(q_all)
+        tags = tags_result.fetchall()
+        total = all_result.fetchall()
+
+        return tags, len(total)
+
 
     async def get(
         self,
@@ -77,22 +120,7 @@ class TagService:
             TagRead: Tag data with blog name and id
         """
         # Query to return tag with blog data
-        q = (
-            select(
-                Tag.id,
-                Tag.name,
-                Tag.date_created,
-                Tag.date_modified,
-                Blog.id.label("blog_id"),
-                Blog.name.label("blog_name"),
-            )
-            .join(
-                Blog,
-                onclause=Blog.id == Tag.blog_id,
-                isouter=True,
-            )
-            .where(Tag.id == tag_id)
-        )
+        q = get_single_tag_query(tag_id=tag_id)
         result = await self.db_session.exec(q)
         tag = result.first()
 
@@ -114,12 +142,12 @@ class TagService:
             current_user (AuthUser): current user object
             name (str): new tag name
         Raises:
-            TagUpdateFail: raised if tag update failed
+            EntityUpdateFail: raised if tag update failed
         Returns:
             TagRead: Read tag
         """
         update_tag = await self.db_session.get(Tag, tag_id)
-        await self.check_blog(
+        await self.blog_service.check_blog_permissions(
             blog_id=update_tag.blog_id,
             current_user=current_user,
         )
@@ -131,7 +159,7 @@ class TagService:
             self.db_session.add(update_tag)
             await self.db_session.commit()
         except Exception:
-            raise TagUpdateFail()
+            raise EntityUpdateFail(entity_id=tag_id, entity_name="tag")
 
         return await self.get(tag_id=tag_id)
 
@@ -146,10 +174,10 @@ class TagService:
             tag_id (UUID): tag id
             current_user (AuthUser): current user object
         Raises:
-            TagDeleteFail: raised if failed to delete tag
+            EntityDeleteFail: raised if failed to delete tag
         """
         delete_tag = await self.db_session.get(Tag, tag_id)
-        await self.check_blog(
+        await self.blog_service.check_blog_permissions(
             blog_id=delete_tag.blog_id,
             current_user=current_user,
         )
@@ -159,7 +187,7 @@ class TagService:
             self.db_session.delete(delete_tag)
             self.db_session.commit()
         except Exception:
-            raise TagDeleteFail()
+            raise EntityDeleteFail(entity_id=tag_id, entity_name="tag")
 
 
 async def get_tag_service(session: AsyncSession = Depends(get_session)):
