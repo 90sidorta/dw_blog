@@ -17,3 +17,19 @@ class TagListingBothFilters(HTTPException):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Tags can either be filtered by blog or by subscriber! Can not filter by both!",
         )
+
+
+class TagAlreadySubscribed(HTTPException):
+    def __init__(self, tag_name: str):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"You already subscribe tag {tag_name}!",
+        )
+
+
+class TagNotYetSubscribed(HTTPException):
+    def __init__(self, tag_name: str):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"You do not subscribe tag {tag_name}!",
+        )

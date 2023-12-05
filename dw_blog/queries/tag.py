@@ -7,6 +7,7 @@ from dw_blog.models.tag import Tag, SortTagBy, TagSubscribers
 from dw_blog.models.blog import Blog
 from dw_blog.models.common import SortOrder
 from dw_blog.exceptions.tag import TagListingBothFilters
+from dw_blog.models.auth import AuthUser
 
 
 def get_single_tag_query(tag_id: UUID):
@@ -91,3 +92,14 @@ def get_listed_tags_query(
     # Add pagination to query
     q_pag = q.limit(limit).offset(offset)
     return q_pag, q_all
+
+
+def tag_subscription_query(
+    tag_id: UUID,
+    current_user: AuthUser,
+):
+    q = select(TagSubscribers).where(
+        TagSubscribers.tag_id == tag_id,
+        TagSubscribers.subscriber_id == current_user["user_id"],
+    )
+    return q

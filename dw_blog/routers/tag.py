@@ -100,6 +100,56 @@ async def get_tag(
     return await tag_service.get(tag_id=tag_id)
 
 
+@router.post(
+    "/{tag_id}/subscribe",
+    response_model=TagRead,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
+        422: {"model": ErrorModel},
+    },
+    summary="Subscribe a tag",
+    description="Add tag subscription for user (if already not subscribed).",
+)
+async def add_tag_subscription(
+    tag_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    tag_service: TagService = Depends(get_tag_service),
+):
+    return await tag_service.subscribe(
+        tag_id=tag_id,
+        current_user=current_user,
+    )
+
+
+@router.post(
+    "/{tag_id}/unsubscribe",
+    response_model=TagRead,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorModel},
+        401: {"model": ErrorModel},
+        403: {"model": ErrorModel},
+        404: {"model": ErrorModel},
+        422: {"model": ErrorModel},
+    },
+    summary="Unsubscribe tag",
+    description="Remove subscription from a tag (if it exists).",
+)
+async def remove_tag_subscription(
+    tag_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    tag_service: TagService = Depends(get_tag_service),
+):
+    return await tag_service.unsubscribe(
+        tag_id=tag_id,
+        current_user=current_user,
+    )
+
+
 @router.patch(
     "/{tag_id}",
     response_model=TagRead,

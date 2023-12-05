@@ -25,7 +25,7 @@ router = APIRouter(route_class=RouteErrorHandler)
         422: {"model": ErrorModel},
     },
     summary="Create new blog",
-    description="Create new blog with creating user as an author.",
+    description="Create new blog and assign current user as an author.",
 )
 async def add_blog(
     request: BlogCreate,

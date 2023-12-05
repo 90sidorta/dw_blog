@@ -3,24 +3,25 @@ from uuid import UUID
 from typing import Optional, Union, List
 
 from fastapi import Depends
-from sqlmodel import Session
+from sqlmodel import Session, select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from dw_blog.db.db import get_session
-from dw_blog.exceptions.tag import TagNotFound
+from dw_blog.exceptions.tag import TagNotFound, TagAlreadySubscribed, TagNotYetSubscribed
+from dw_blog.exceptions.user import UserNotFound
 from dw_blog.exceptions.common import EntityUpdateFail, EntityDeleteFail, EntityFailedAdd, PaginationLimitSurpassed
 from dw_blog.models.auth import AuthUser
 from dw_blog.models.tag import Tag, TagRead, TagReadList, SortTagBy
+from dw_blog.models.user import User
 from dw_blog.services.blog import BlogService
-from dw_blog.services.user import UserService
-from dw_blog.queries.tag import get_single_tag_query, get_listed_tags_query
+from dw_blog.queries.tag import get_single_tag_query, get_listed_tags_query, tag_subscription_query
 from dw_blog.models.common import SortOrder
 
 
 class TagService:
     def __init__(self, db_session: Session):
         self.db_session = db_session
-        self.user_service = UserService(db_session)
         self.blog_service = BlogService(db_session)
 
     async def create(
@@ -105,7 +106,6 @@ class TagService:
 
         return tags, len(total)
 
-
     async def get(
         self,
         tag_id: UUID,
@@ -129,6 +129,87 @@ class TagService:
             raise TagNotFound(tag_id=tag_id)
 
         return tag
+
+    async def subscribe(
+        self,
+        tag_id: UUID,
+        current_user: AuthUser,
+    ) -> TagRead:
+        """This function creates a new subscribe record
+        Args:
+            tag_id (UUID): id of the tag to be
+            subscribed to
+            current_user (AuthUser): current user object
+        Raises:
+            TagNotFound: raised if tag does not exist
+            UserNotFound: raised if user not found
+            TagAlreadySubscribed: raised if tag is already
+            subscribed by the user
+            EntityUpdateFail: raised if tag subscription
+            failed
+        Returns:
+            TagRead: tag data
+        """
+        # Try to get the tag
+        q = (select(Tag).options(selectinload(Tag.subscribers)).where(Tag.id == tag_id))
+        sub_tag_results = await self.db_session.exec(q)
+        if not (sub_tag := sub_tag_results.first()):
+            raise TagNotFound(tag_id=tag_id)
+
+        # Check if user is already a subscriber
+        already_sub = [] if len(sub_tag.subscribers) == 0 else [str(subsciber.id) for subsciber in sub_tag.subscribers]
+        if current_user["user_id"] in already_sub:
+            raise TagAlreadySubscribed(tag_name=sub_tag.name)
+        # Check if user exists
+        if not (adding_user := await self.db_session.get(User, current_user["user_id"])):
+            user_id = current_user["user_id"]
+            raise UserNotFound(error_message=f"User with id {user_id} not found!")
+
+        # Try to add new subscription
+        try:
+            sub_tag.subscribers.append(adding_user)
+            self.db_session.add(sub_tag)
+            await self.db_session.commit()
+        except Exception:
+            raise EntityUpdateFail(entity_id=tag_id, entity_name="tag")
+
+        return await self.get(tag_id=tag_id)
+
+    async def unsubscribe(
+        self,
+        tag_id: UUID,
+        current_user: AuthUser,
+    ) -> TagRead:
+        """This function deletes tag subscription entry
+        Args:
+            tag_id (UUID): id of the tag to unsubscribe
+            current_user (AuthUser): current user object
+        Raises:
+            TagNotFound: raised if tag does not exist
+            UserNotFound: raised if user not found
+            TagNotYetSubscribed: raised if tag was not
+            subscribed by the user
+            EntityUpdateFail: raised if tag subscription
+            failed
+        Returns:
+            TagRead: tag data
+        """
+        # Check if tag exists
+        tag = await self.get(tag_id=tag_id)
+        
+        # Check if user is a subscriber
+        q = tag_subscription_query(tag_id=tag_id, current_user=current_user)
+        sub_tag_result = await self.db_session.exec(q)
+        if not (sub_tag := sub_tag_result.first()):
+            raise TagNotYetSubscribed(tag_name=tag.name)
+
+        # Delete subscription
+        try:
+            await self.db_session.delete(sub_tag)
+            await self.db_session.commit()
+        except Exception:
+            raise EntityUpdateFail(entity_id=tag_id, entity_name="tag")
+        return await self.get(tag_id=tag_id)
 
     async def update(
         self,
@@ -188,7 +269,6 @@ class TagService:
             self.db_session.commit()
         except Exception:
             raise EntityDeleteFail(entity_id=tag_id, entity_name="tag")
-
 
 async def get_tag_service(session: AsyncSession = Depends(get_session)):
     yield TagService(session)
