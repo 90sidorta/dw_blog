@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Optional
 
 from fastapi import HTTPException, status
 
@@ -100,10 +101,19 @@ class BlogNotLiked(HTTPException):
 
 
 class BlogCategoryLimit(HTTPException):
-    def __init__(self, blog_id: UUID, blog_categories_already: int):
+    def __init__(
+            self,
+            blog_id: UUID,
+            blog_cat_already: Optional[int] = None,
+            blog_cat_add: Optional[int] = None
+        ):
+        if blog_cat_already and blog_cat_add:
+            err_msg = f"Blog {blog_id} already has {blog_cat_already} categories! Adding {blog_cat_add} would exceed the limit of three!"
+        else:
+            err_msg = f"You can not delete all categories from blog {blog_id}!"
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Blog {blog_id} already has {blog_categories_already} categories! Blog can only have up to three!",
+            detail=err_msg,
         )
 
 
@@ -112,4 +122,12 @@ class BlogAlreadyInCategory(HTTPException):
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Blog {blog_id} already belongs to category {category_id}!",
+        )
+
+
+class BlogNotInCategory(HTTPException):
+    def __init__(self, blog_id: UUID, category_id: UUID):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Blog {blog_id} does not belong to category {category_id}!",
         )

@@ -79,7 +79,8 @@ class BlogUpdate(SQLModel):
         nullable=True,
     )
     archived: Optional[bool] = False
-    categories_id: Optional[List[uuid.UUID]] = None
+    add_categories_id: Optional[List[uuid.UUID]] = None
+    remove_categories_id: Optional[List[uuid.UUID]] = None
 
 
 class BlogAuthor(SQLModel):

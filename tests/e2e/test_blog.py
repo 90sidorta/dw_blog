@@ -243,6 +243,26 @@ async def test__list_blogs_200_search_name(
     assert "ccc" not in blogs
 
 
+async def test__list_blogs_200_search_categories_ids(
+    async_client: AsyncClient,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="ListCat1")
+    cat_2 = await _add_category(async_session, name="ListCat2")
+    cat_3 = await _add_category(async_session, name="ListCat3")
+    await _add_blog(async_session, name="aaa", categories=[cat_1, cat_2])
+    await _add_blog(async_session, name="aaabbb", categories=[cat_3])
+    await _add_blog(async_session, name="ccc", categories=[cat_1, cat_2])
+
+    response = await async_client.get(
+        f"/blogs?limit=10&offset=0&categories_ids={cat_1.id}&categories_ids={cat_2.id}",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    blogs = [blog["name"] for blog in response.json()["data"]]
+    assert "aaabbb" not in blogs
+
+
 async def test__list_blogs_200_search_active_only(
     async_client: AsyncClient,
     async_session,
@@ -803,6 +823,161 @@ async def test__update_blog_200_name(
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["name"] == payload["name"]
+
+
+async def test__update_blog_200_add_category(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="category1")
+    cat_2 = await _add_category(async_session, name="category2")
+    blog_1 = await _add_blog(async_session, categories=[cat_1])
+    payload = {"add_categories_id": [f"{cat_2.id}"]}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert cat_1.name in response.json()["categories_name"]
+    assert cat_2.name in response.json()["categories_name"]
+
+
+async def test__update_blog_400_add_category_already_added(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="category11")
+    blog_1 = await _add_blog(async_session, categories=[cat_1])
+    payload = {"add_categories_id": [f"{cat_1.id}"]}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"Blog {blog_1.id} already belongs to category {cat_1.id}!"
+
+
+async def test__update_blog_400_add_category_more_than_3(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="category111")
+    cat_2 = await _add_category(async_session, name="category222")
+    cat_3 = await _add_category(async_session, name="category333")
+    cat_4 = await _add_category(async_session, name="category444")
+    blog_1 = await _add_blog(async_session, categories=[cat_1, cat_2])
+    payload = {"add_categories_id": [f"{cat_3.id}", f"{cat_4.id}"]}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"Blog {blog_1.id} already has 2 categories! Adding 2 would exceed the limit of three!"
+
+
+async def test__update_blog_404_add_category_nonexistent(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="category10")
+    blog_1 = await _add_blog(async_session, categories=[cat_1])
+    cat_2 = uuid.uuid4()
+    payload = {"add_categories_id": [f"{cat_2}"]}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Failed to fetch category {cat_2}!"
+
+
+async def test__update_blog_200_remove_category(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="category101")
+    cat_2 = await _add_category(async_session, name="category202")
+    blog_1 = await _add_blog(async_session, categories=[cat_1, cat_2])
+    payload = {"remove_categories_id": [f"{cat_2.id}"]}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert cat_1.name in response.json()["categories_name"]
+    assert cat_2.name not in response.json()["categories_name"]
+
+
+async def test__update_blog_400_remove_category_not_added(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="category9")
+    cat_2 = await _add_category(async_session, name="category8")
+    blog_1 = await _add_blog(async_session, categories=[cat_1])
+    payload = {"remove_categories_id": [f"{cat_2.id}"]}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"Blog {blog_1.id} does not belong to category {cat_2.id}!"
+
+
+async def test__update_blog_404_remove_category_nonexistent(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="category91")
+    blog_1 = await _add_blog(async_session, categories=[cat_1])
+    cat_2 = uuid.uuid4()
+    payload = {"remove_categories_id": [f"{cat_2}"]}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Failed to fetch category {cat_2}!"
+
+
+async def test__update_blog_200_remove_all_categories(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    cat_1 = await _add_category(async_session, name="category911")
+    cat_2 = await _add_category(async_session, name="category922")
+    blog_1 = await _add_blog(async_session, categories=[cat_1, cat_2])
+    payload = {"remove_categories_id": [f"{cat_2.id}", f"{cat_1.id}"]}
+
+    response = await async_client.patch(
+        f"/blogs/{blog_1.id}", headers={"Authorization": f"Bearer {access_token}"},
+        json=payload,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"You can not delete all categories from blog {blog_1.id}!"
 
 
 async def test__update_blog_422_name_too_short(

@@ -1,4 +1,3 @@
-- Add blogs category tests (list nad update)
 - Add tags tests
 - Add posts module
 - Add comments module

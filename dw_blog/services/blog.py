@@ -10,7 +10,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from dw_blog.db.db import get_session
 from dw_blog.exceptions.blog import (BlogAlreadyAuthor, BlogAlreadyLiked,
                                      BlogAlreadySubscribed, BlogArchived,
-                                     BlogActionFail,
+                                     BlogActionFail, BlogNotInCategory,
                                      BlogAuthorsLimitReached,
                                      BlogLastAuthor, BlogCategoryLimit,
                                      BlogLimitReached, BlogAlreadyInCategory,
@@ -545,7 +545,8 @@ class BlogService:
         current_user: AuthUser,
         name: Optional[str] = None,
         archived: Optional[bool] = None,
-        categories_id: List[UUID] = None,
+        add_categories_id: List[UUID] = None,
+        remove_categories_id: List[UUID] = None,
     ) -> BlogRead:
         """Updates blog data
         Args:
@@ -568,9 +569,9 @@ class BlogService:
 
         # Update blog name
         q = (select(Blog).options(selectinload(Blog.categories)).where(Blog.id == blog_id))
-        if not (update_blog_results := await self.db_session.exec(q)):
+        update_blog_results = await self.db_session.exec(q)
+        if not (update_blog := update_blog_results.first()):
             raise BlogNotFound(blog_id=blog_id)
-        update_blog = update_blog_results.first()
 
         if name:
             update_blog.name = name
@@ -580,16 +581,42 @@ class BlogService:
             update_blog.archived = archived
 
         # Update blog categories
-        if categories_id:
+        if add_categories_id or remove_categories_id:
             already_categories = [] if len(update_blog.categories) == 0 else [category.id for category in update_blog.categories]
-            if len(update_blog.categories) + len(categories_id) > 3:
-                raise BlogCategoryLimit(blog_id=blog_id, blog_categories_already=len(update_blog.categories))
-            for category_id in categories_id:
-                if category_id in already_categories:
-                    raise BlogAlreadyInCategory(category_id=category_id, blog_id=blog_id)
-                if not (adding_category := await self.db_session.get(Category, category_id)):
-                    raise CategoryNotFound(category_id=category_id)
-                update_blog.categories.append(adding_category)
+
+            # Add categories to blog
+            if add_categories_id:
+                # Check if adding categories will not exceed maximum category count per blog
+                if len(update_blog.categories) + len(add_categories_id) > 3:
+                    raise BlogCategoryLimit(
+                        blog_id=blog_id,
+                        blog_cat_already=len(update_blog.categories),
+                        blog_cat_add=len(add_categories_id)
+                    )
+                for category_id in add_categories_id:
+                    # Check if the blog is not already in the category
+                    if category_id in already_categories:
+                        raise BlogAlreadyInCategory(category_id=category_id, blog_id=blog_id)
+                    # Check if the category exist
+                    if not (adding_category := await self.db_session.get(Category, category_id)):
+                        raise CategoryNotFound(category_id=category_id)
+                    # Add blog to category
+                    update_blog.categories.append(adding_category)
+
+            # Remove categories from blog
+            if remove_categories_id:
+                for category_id in remove_categories_id:
+                    # Check if category to be removed exists
+                    if not (removing_category := await self.db_session.get(Category, category_id)):
+                        raise CategoryNotFound(category_id=category_id)
+                    # Check if category to be removed is assigned to the blog
+                    if category_id not in already_categories:
+                        raise BlogNotInCategory(category_id=category_id, blog_id=blog_id)
+                    # Remove category from the blog
+                    update_blog.categories.remove(removing_category)
+                    # Check if blog has any categories after removal
+                    if len(update_blog.categories) == 0:
+                        raise BlogCategoryLimit(blog_id=blog_id)
 
         try:
             self.db_session.add(update_blog)
