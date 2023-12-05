@@ -44,6 +44,7 @@ class TagService:
         await self.blog_service.check_blog_permissions(
             blog_id=blog_id,
             current_user=current_user,
+            operation="add tag"
         )
 
         # Create new tag object
