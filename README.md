@@ -4,3 +4,4 @@ Technologies used:
 - Docker
 - PostgreSQL
 - SQLModel
+- FASTApi
