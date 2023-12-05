@@ -35,6 +35,7 @@ def get_listed_tags_query(
     offset: int,
     user_id: Optional[UUID] = None,
     blog_id: Optional[UUID] = None,
+    tag_name: Optional[str] = None,
     sort_order: SortOrder = SortOrder.ascending,
     sort_by: SortTagBy = SortTagBy.most_subscribers,
 ):
@@ -73,6 +74,10 @@ def get_listed_tags_query(
     # Filter by subscribed user
     if user_id:
         q = q.where(sub_q.c.subscribers_ids.any(user_id))
+
+    # Filter by tag name
+    if tag_name:
+        q = q.where(sub_q.c.name.ilike(f"%{tag_name}%"))
 
     # Create sorting
     if sort_by == SortTagBy.most_subscribers:

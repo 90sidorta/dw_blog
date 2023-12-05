@@ -19,7 +19,7 @@ from dw_blog.models.common import UserType
 from dw_blog.models.user import User
 from dw_blog.utils.auth import create_access_token
 from main import app
-from tests.factories import ADMIN_EMAIL, ADMIN_ID, BlogFactory, UserFactory, CategoryFactory
+from tests.factories import ADMIN_EMAIL, ADMIN_ID, BlogFactory, UserFactory, CategoryFactory, TagFactory
 
 settings = Settings()
 db_url_test_sync = settings.DATABASE_URL_TEST_SYNC
@@ -107,6 +107,13 @@ async def _add_user(db_session, **kwargs):
 
 async def _add_blog(db_session, **kwargs):
     blog = BlogFactory(**kwargs)
+    db_session.add(blog)
+    await db_session.commit()
+    return blog
+
+
+async def _add_tag(db_session, **kwargs):
+    blog = TagFactory(**kwargs)
     db_session.add(blog)
     await db_session.commit()
     return blog

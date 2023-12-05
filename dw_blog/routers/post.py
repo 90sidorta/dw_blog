@@ -7,8 +7,9 @@ from dw_blog.models.auth import AuthUser
 from dw_blog.models.post import PostCreate, PostRead
 from dw_blog.services.post import PostService, get_post_service
 from dw_blog.utils.auth import get_current_user
+from errors import RouteErrorHandler
 
-router = APIRouter()
+router = APIRouter(route_class=RouteErrorHandler)
 
 
 @router.post(

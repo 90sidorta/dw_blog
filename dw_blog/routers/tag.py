@@ -9,8 +9,9 @@ from dw_blog.models.tag import TagCreate, TagRead, TagUpdate, SortTagBy, ReadTag
 from dw_blog.services.tag import TagService, get_tag_service
 from dw_blog.utils.auth import get_current_user
 from dw_blog.models.common import ErrorModel, Pagination, Sort, SortOrder
+from errors import RouteErrorHandler
 
-router = APIRouter()
+router = APIRouter(route_class=RouteErrorHandler)
 
 
 @router.post(
@@ -54,6 +55,7 @@ async def list_tags(
     offset: int = 0,
     user_id: Optional[UUID] = None,
     blog_id: Optional[UUID] = None,
+    tag_name: Optional[str] = None,
     sort_order: SortOrder = SortOrder.ascending,
     sort_by: SortTagBy = SortTagBy.most_subscribers,
     tag_service: TagService = Depends(get_tag_service),
@@ -63,6 +65,7 @@ async def list_tags(
         offset=offset,
         user_id=user_id,
         blog_id=blog_id,
+        tag_name=tag_name,
         sort_order=sort_order,
         sort_by=sort_by
     )

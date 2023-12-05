@@ -31,7 +31,10 @@ class TagFactory(factory.Factory):
 
     id = factory.Faker("uuid4")
     name = factory.Sequence(lambda n: f"#tag_name_{n}")
+    blog = None
     blog_id = None
+    posts = []
+    subscribers = factory.List([factory.SubFactory(UserFactory)])
 
 
 class CategoryFactory(factory.Factory):

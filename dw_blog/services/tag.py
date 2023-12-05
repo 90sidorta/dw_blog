@@ -70,6 +70,7 @@ class TagService:
         offset: int,
         user_id: Optional[UUID] = None,
         blog_id: Optional[UUID] = None,
+        tag_name: Optional[str] = None,
         sort_order: SortOrder = SortOrder.ascending,
         sort_by: SortTagBy = SortTagBy.most_subscribers,
     ) -> Union[List[TagReadList], int]:
@@ -79,6 +80,7 @@ class TagService:
             offset [int]: how many records should be skipped
             user_id (Optional[UUID], optional): Id of the user to get its subscribed tags. Defaults to None.
             blog_id (Optional[UUID], optional): Id of the blog to get its tags. Defaults to None.
+            tag_name (Optional[str], optional): Name of the tag. Defaults to None.
             sort_order [SortOrder]: order of sorting retrieved records. Defaults to ascending.
             sort_by [SortTagBy]: prop to sort records by. Defaults to most_subscribers.
         Raises:
@@ -95,6 +97,7 @@ class TagService:
             offset=offset,
             user_id=user_id,
             blog_id=blog_id,
+            tag_name=tag_name,
             sort_order=sort_order,
             sort_by=sort_by,
         )
