@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from dw_blog.config import Settings
-from dw_blog.models.common import UserType
+from dw_blog.schemas.common import UserType
 
 settings = Settings()
 SECRET_KEY = settings.SECRET_KEY

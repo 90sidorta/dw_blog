@@ -11,12 +11,13 @@ from dw_blog.db.db import get_session
 from dw_blog.exceptions.tag import TagNotFound, TagAlreadySubscribed, TagNotYetSubscribed
 from dw_blog.exceptions.user import UserNotFound
 from dw_blog.exceptions.common import EntityUpdateFail, EntityDeleteFail, EntityFailedAdd, PaginationLimitSurpassed
-from dw_blog.models.auth import AuthUser
-from dw_blog.models.tag import Tag, TagRead, TagReadList, SortTagBy
+from dw_blog.schemas.auth import AuthUser
+from dw_blog.models.tag import Tag
+from dw_blog.schemas.tag import TagRead, TagReadList, SortTagBy
 from dw_blog.models.user import User
 from dw_blog.services.blog import BlogService
 from dw_blog.queries.tag import get_single_tag_query, get_listed_tags_query, tag_subscription_query
-from dw_blog.models.common import SortOrder
+from dw_blog.schemas.common import SortOrder
 
 
 class TagService:

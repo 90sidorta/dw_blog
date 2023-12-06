@@ -7,8 +7,9 @@ from sqlmodel import Session, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
-from dw_blog.models.auth import AuthUser
-from dw_blog.models.post import Post, PostRead
+from dw_blog.schemas.auth import AuthUser
+from dw_blog.models.post import Post
+from dw_blog.schemas.post import PostRead
 from dw_blog.services.user import UserService
 from dw_blog.utils.auth import check_if_admin
 

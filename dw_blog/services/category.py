@@ -7,12 +7,14 @@ from sqlmodel import Session
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
-from dw_blog.models.common import SortOrder
+from dw_blog.schemas.common import SortOrder
 from dw_blog.exceptions.category import CategoryNotFound, CategoryHasBlogs
 from dw_blog.exceptions.common import PaginationLimitSurpassed, AdminStatusRequired, EntityFailedAdd, EntityUpdateFail, EntityDeleteFail
-from dw_blog.models.auth import AuthUser
-from dw_blog.models.category import Category, CategoryRead, CategoryBlogRead, SortCategoryBy, CategoryReadList
-from dw_blog.models.user import User, UserType
+from dw_blog.schemas.auth import AuthUser
+from dw_blog.models.category import Category
+from dw_blog.schemas.category import CategoryRead, CategoryBlogRead, SortCategoryBy, CategoryReadList
+from dw_blog.models.user import User
+from dw_blog.schemas.user import UserType
 from dw_blog.queries.category import get_single_category_query, get_listed_categories_query, get_blogs_for_category_query
 
 

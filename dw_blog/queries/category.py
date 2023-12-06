@@ -3,8 +3,9 @@ from typing import Optional
 
 from sqlmodel import func, select, literal_column, text
 
-from dw_blog.models.category import Category, CategoryBlogs, SortCategoryBy
-from dw_blog.models.common import SortOrder
+from dw_blog.models.category import Category, CategoryBlogs
+from dw_blog.schemas.category import SortCategoryBy
+from dw_blog.schemas.common import SortOrder
 from dw_blog.models.blog import Blog, BlogLikes
 
 

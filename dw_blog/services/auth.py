@@ -5,7 +5,7 @@ from sqlmodel import Session
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from dw_blog.db.db import get_session
-from dw_blog.models.auth import TokenType
+from dw_blog.schemas.auth import TokenType
 from dw_blog.services.user import UserService
 from dw_blog.utils.auth import create_access_token, verify_password
 

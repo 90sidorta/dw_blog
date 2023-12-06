@@ -1,4 +1,4 @@
-- Add tags tests
+- schemas to schemas, models to models
 - Add posts module
 - Add comments module
 - Add blacklisting users and tags and hide blogs, tags, posts and comments

@@ -3,11 +3,12 @@ from typing import Optional
 
 from sqlmodel import select, func
 
-from dw_blog.models.tag import Tag, SortTagBy, TagSubscribers
+from dw_blog.models.tag import Tag, TagSubscribers
+from dw_blog.schemas.tag import SortTagBy
 from dw_blog.models.blog import Blog
-from dw_blog.models.common import SortOrder
+from dw_blog.schemas.common import SortOrder
 from dw_blog.exceptions.tag import TagListingBothFilters
-from dw_blog.models.auth import AuthUser
+from dw_blog.schemas.auth import AuthUser
 
 
 def get_single_tag_query(tag_id: UUID):

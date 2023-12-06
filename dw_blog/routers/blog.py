@@ -3,10 +3,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status, Query
 
-from dw_blog.models.auth import AuthUser
-from dw_blog.models.blog import (BlogCreate, BlogRead, BlogUpdate,
+from dw_blog.schemas.auth import AuthUser
+from dw_blog.schemas.blog import (BlogCreate, BlogRead, BlogUpdate,
                                  ReadBlogsPagination, SortBlogBy)
-from dw_blog.models.common import ErrorModel, Pagination, Sort, SortOrder
+from dw_blog.schemas.common import ErrorModel, Pagination, Sort, SortOrder
 from dw_blog.services.blog import BlogService, get_blog_service
 from dw_blog.utils.auth import get_current_user
 from errors import RouteErrorHandler

@@ -15,7 +15,7 @@ from dw_blog.config import Settings
 from dw_blog.db.db import get_session
 from dw_blog.models.blog import BlogAuthors, BlogLikes, BlogSubscribers
 from dw_blog.models.category import CategoryBlogs
-from dw_blog.models.common import UserType
+from dw_blog.schemas.common import UserType
 from dw_blog.models.user import User
 from dw_blog.utils.auth import create_access_token
 from main import app

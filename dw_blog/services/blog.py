@@ -27,13 +27,11 @@ from dw_blog.exceptions.common import (
     EntityDeleteFail,
 )
 from dw_blog.exceptions.user import UserNotFound
-from dw_blog.models.auth import AuthUser
-from dw_blog.models.blog import (Blog, BlogAuthor, BlogAuthors, BlogLiker,
-                                 BlogLikes, BlogRead, BlogReadList,
-                                 BlogSubscriber, BlogSubscribers, BlogTag,
-                                 SortBlogBy)
-from dw_blog.models.common import SortOrder
-from dw_blog.models.user import UserType
+from dw_blog.schemas.auth import AuthUser
+from dw_blog.models.blog import Blog, BlogAuthors, BlogLikes, BlogSubscribers
+from dw_blog.schemas.blog import BlogAuthor, BlogLiker, BlogRead, BlogReadList, BlogSubscriber, BlogTag, SortBlogBy
+from dw_blog.schemas.common import SortOrder
+from dw_blog.schemas.user import UserType
 from dw_blog.models.category import Category
 from dw_blog.queries.blog import (check_like_query, check_subscription_query,
                                   delete_author_query, get_listed_blogs_query,
@@ -83,11 +81,7 @@ class BlogService:
         await self.check_author_blogs(user.id)
 
         # Get categories
-        # TODO: move this code to category service
-        categories = []
-        for category_id in categories_id:
-            category = await self.db_session.get(Category, category_id)
-            categories.append(category)
+        categories = [await self.db_session.get(Category, category_id) for category_id in categories_id]
 
         # Try to add new blog
         try:
@@ -560,19 +554,20 @@ class BlogService:
         Returns:
             BlogRead: Read blog with author data
         """
-        # TODO: add an option to update categories of the blog
         await self.check_blog_permissions(
             blog_id=blog_id,
             current_user=current_user,
             operation="blog update"
         )
 
-        # Update blog name
-        q = (select(Blog).options(selectinload(Blog.categories)).where(Blog.id == blog_id))
-        update_blog_results = await self.db_session.exec(q)
+        # Get blog for update
+        update_blog_results = await self.db_session.exec(
+            (select(Blog).options(selectinload(Blog.categories)).where(Blog.id == blog_id))
+        )
         if not (update_blog := update_blog_results.first()):
             raise BlogNotFound(blog_id=blog_id)
 
+        # Update blog name
         if name:
             update_blog.name = name
 

@@ -464,9 +464,6 @@ async def test__delete_blog_404_tag_nonexistent(
         headers={"Authorization": f"Bearer {access_token}"},
     )
 
-    print("+++++++++++++")
-    print(response.json())
-    print("+++++++++++++")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == f"Tag with id {tag_1} not found!"
 
@@ -484,8 +481,5 @@ async def test__delete_blog_403_other_user_blog(
         headers={"Authorization": f"Bearer {other_user_access_token}"},
     )
 
-    print("+++++++++++++")
-    print(response.json())
-    print("+++++++++++++")
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert response.json()["detail"] == "To perform tag delete you need either to be an admin or author of the blog!"

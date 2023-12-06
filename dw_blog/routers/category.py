@@ -3,9 +3,9 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, status
 
-from dw_blog.models.auth import AuthUser
-from dw_blog.models.common import ErrorModel, Pagination, Sort, SortOrder
-from dw_blog.models.category import CategoryCreate, CategoryRead, SortCategoryBy, ReadCategoriesPagination, CategoryUpdate
+from dw_blog.schemas.auth import AuthUser
+from dw_blog.schemas.common import ErrorModel, Pagination, Sort, SortOrder
+from dw_blog.schemas.category import CategoryCreate, CategoryRead, SortCategoryBy, ReadCategoriesPagination, CategoryUpdate
 from dw_blog.services.category import CategoryService, get_category_service
 from dw_blog.utils.auth import get_current_user
 from errors import RouteErrorHandler

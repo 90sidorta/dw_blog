@@ -4,10 +4,10 @@ from functools import reduce
 
 from sqlmodel import delete, func, select, or_, any_
 
-from dw_blog.models.auth import AuthUser
-from dw_blog.models.blog import (Blog, BlogAuthors, BlogLikes, BlogSubscribers,
-                                 SortBlogBy)
-from dw_blog.models.common import SortOrder
+from dw_blog.schemas.auth import AuthUser
+from dw_blog.models.blog import Blog, BlogAuthors, BlogLikes, BlogSubscribers
+from dw_blog.schemas.blog import SortBlogBy
+from dw_blog.schemas.common import SortOrder
 from dw_blog.models.tag import Tag
 from dw_blog.models.user import User
 from dw_blog.models.category import Category, CategoryBlogs

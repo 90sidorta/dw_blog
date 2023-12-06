@@ -3,10 +3,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 
-from dw_blog.models.auth import AuthUser
-from dw_blog.models.common import UserType
-from dw_blog.models.user import (User, UserCreate, UserdDelete, UserRead,
-                                 UserUpdate)
+from dw_blog.schemas.auth import AuthUser
+from dw_blog.schemas.common import UserType
+from dw_blog.schemas.user import UserCreate, UserdDelete, UserRead, UserUpdate
 from dw_blog.services.user import UserService, get_user_service
 from dw_blog.utils.auth import get_current_user
 
