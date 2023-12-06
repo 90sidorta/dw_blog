@@ -961,7 +961,7 @@ async def test__update_blog_404_remove_category_nonexistent(
     assert response.json()["detail"] == f"Failed to fetch category {cat_2}!"
 
 
-async def test__update_blog_200_remove_all_categories(
+async def test__update_blog_400_remove_all_categories(
     async_client: AsyncClient,
     access_token,
     async_session,

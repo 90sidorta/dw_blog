@@ -194,7 +194,7 @@ async def delete_blog(
     tag_service: TagService = Depends(get_tag_service),
 ):
     await tag_service.delete(
-        blog_id=tag_id,
+        tag_id=tag_id,
         current_user=current_user,
     )
     return

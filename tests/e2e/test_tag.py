@@ -5,9 +5,8 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
-from tests.conftest import (_add_author_to_blog, _add_blog,
-                            _add_likers_to_blog, _add_subscriber_to_blog,
-                            _add_user, _add_category, _add_tag)
+from dw_blog.models.user import User
+from tests.conftest import (_add_author_to_blog, _add_blog, _add_user, _add_tag)
 from tests.factories import ADMIN_ID
 
 
@@ -249,8 +248,244 @@ async def test__list_tags_400_filter_subscriber_id_blog_id(
     assert response.json()["detail"] == "Tags can either be filtered by blog or by subscriber! Can not filter by both!"
 
 
-# get_tag
-# add_tag_subscription
-# remove_tag_subscription
-# update_tag
-# delete_blog
+async def test__get_tag_200(
+    async_client: AsyncClient,
+    async_session,
+    access_token,
+):
+    blog_1 = await _add_blog(async_session)
+    tag_1 = await _add_tag(async_session, name="#get_test_200", blog=blog_1, blog_id=blog_1.id)
+
+    response = await async_client.get(
+        f"/tags/{tag_1.id}",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["name"] == "#get_test_200"
+
+
+async def test__get_tag_404(
+    async_client: AsyncClient,
+    access_token,
+):
+    tag_1 = uuid.uuid4()
+
+    response = await async_client.get(
+        f"/tags/{tag_1}",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Tag with id {tag_1} not found!"
+
+
+async def test__add_tag_subscription_200(
+    async_client: AsyncClient,
+    async_session,
+    access_token,
+):
+    blog_1 = await _add_blog(async_session)
+    tag_1 = await _add_tag(async_session, name="#subscribe_test_200", blog=blog_1, blog_id=blog_1.id)
+
+    response = await async_client.post(
+        f"/tags/{tag_1.id}/subscribe",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["name"] == tag_1.name
+
+
+async def test__add_tag_subscription_404_no_tag(
+    async_client: AsyncClient,
+    access_token,
+):
+    tag_1 = uuid.uuid4()
+
+    response = await async_client.post(
+        f"/tags/{tag_1}/subscribe",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Tag with id {tag_1} not found!"
+
+
+async def test__add_tag_subscription_400_already_sub(
+    async_client: AsyncClient,
+    async_session,
+    access_token,
+):
+    admin_user = await async_session.get(User, ADMIN_ID)
+    blog_1 = await _add_blog(async_session)
+    tag_1 = await _add_tag(async_session, name="#subscribe_test_400", blog=blog_1, blog_id=blog_1.id, subscribers=[admin_user])
+
+    response = await async_client.post(
+        f"/tags/{tag_1.id}/subscribe",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"You already subscribe tag {tag_1.name}!"
+
+
+async def test__remove_tag_subscription_200(
+    async_client: AsyncClient,
+    async_session,
+    access_token,
+):
+    admin_user = await async_session.get(User, ADMIN_ID)
+    blog_1 = await _add_blog(async_session)
+    tag_1 = await _add_tag(async_session, name="#unsubscribe_test_400", blog=blog_1, blog_id=blog_1.id, subscribers=[admin_user])
+
+    response = await async_client.post(
+        f"/tags/{tag_1.id}/unsubscribe",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["name"] == tag_1.name
+
+
+async def test__remove_tag_subscription_404_no_tag(
+    async_client: AsyncClient,
+    access_token,
+):
+    tag_1 = uuid.uuid4()
+
+    response = await async_client.post(
+        f"/tags/{tag_1}/unsubscribe",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Tag with id {tag_1} not found!"
+
+
+async def test__remove_tag_subscription_400_not_sub(
+    async_client: AsyncClient,
+    async_session,
+    access_token,
+):
+    blog_1 = await _add_blog(async_session)
+    tag_1 = await _add_tag(async_session, name="#unsubscribe_test_400", blog=blog_1, blog_id=blog_1.id)
+
+    response = await async_client.post(
+        f"/tags/{tag_1.id}/unsubscribe",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == f"You do not subscribe tag {tag_1.name}!"
+
+
+async def test__update_tag_200_name(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    await _add_author_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
+    tag_1 = await _add_tag(async_session, name="#update_test_200", blog=blog_1, blog_id=blog_1.id)
+    payload = {"name": "#new_name"}
+
+    response = await async_client.patch(
+        f"/tags/{tag_1.id}",
+        json=payload,
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["name"] == payload["name"]
+
+
+async def test__update_tag_404_tag_nonexistent(
+    async_client: AsyncClient,
+    access_token,
+):
+    tag_1 = uuid.uuid4()
+    payload = {"name": "#some"}
+
+    response = await async_client.patch(
+        f"/tags/{tag_1}",
+        json=payload,
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Tag with id {tag_1} not found!"
+
+
+async def test__update_tag_403_other_user_blog(
+    async_client: AsyncClient,
+    other_user_access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    tag_1 = await _add_tag(async_session, name="#update_test_403", blog=blog_1, blog_id=blog_1.id)
+    payload = {"name": "#other"}
+
+    response = await async_client.patch(
+        f"/tags/{tag_1.id}",
+        json=payload,
+        headers={"Authorization": f"Bearer {other_user_access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == "To perform tag update you need either to be an admin or author of the blog!"
+
+
+async def test__delete_blog_200(
+    async_client: AsyncClient,
+    access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    await _add_author_to_blog(async_session, user_id=ADMIN_ID, blog_id=blog_1.id)
+    tag_1 = await _add_tag(async_session, name="#update_test_200", blog=blog_1, blog_id=blog_1.id)
+
+    response = await async_client.delete(
+        f"/tags/{tag_1.id}",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+async def test__delete_blog_404_tag_nonexistent(
+    async_client: AsyncClient,
+    access_token,
+):
+    tag_1 = uuid.uuid4()
+
+    response = await async_client.delete(
+        f"/tags/{tag_1}",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    print("+++++++++++++")
+    print(response.json())
+    print("+++++++++++++")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == f"Tag with id {tag_1} not found!"
+
+
+async def test__delete_blog_403_other_user_blog(
+    async_client: AsyncClient,
+    other_user_access_token,
+    async_session,
+):
+    blog_1 = await _add_blog(async_session)
+    tag_1 = await _add_tag(async_session, name="#update_test_403", blog=blog_1, blog_id=blog_1.id)
+
+    response = await async_client.delete(
+        f"/tags/{tag_1.id}",
+        headers={"Authorization": f"Bearer {other_user_access_token}"},
+    )
+
+    print("+++++++++++++")
+    print(response.json())
+    print("+++++++++++++")
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == "To perform tag delete you need either to be an admin or author of the blog!"

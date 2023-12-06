@@ -231,10 +231,12 @@ class TagService:
         Returns:
             TagRead: Read tag
         """
-        update_tag = await self.db_session.get(Tag, tag_id)
+        if not (update_tag := await self.db_session.get(Tag, tag_id)):
+            raise TagNotFound(tag_id=tag_id)
         await self.blog_service.check_blog_permissions(
             blog_id=update_tag.blog_id,
             current_user=current_user,
+            operation="tag update",
         )
 
         # Update blog name
@@ -261,10 +263,12 @@ class TagService:
         Raises:
             EntityDeleteFail: raised if failed to delete tag
         """
-        delete_tag = await self.db_session.get(Tag, tag_id)
+        if not (delete_tag := await self.db_session.get(Tag, tag_id)):
+            raise TagNotFound(tag_id=tag_id)
         await self.blog_service.check_blog_permissions(
             blog_id=delete_tag.blog_id,
             current_user=current_user,
+            operation="tag delete",
         )
 
         # Delete blog

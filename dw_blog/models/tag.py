@@ -82,7 +82,7 @@ class TagRead(TagBase):
     blog_name: str
 
 
-class TagUpdate(TagCreate):
+class TagUpdate(SQLModel):
     name: str = Field(
         min_length=3,
         max_length=500,
