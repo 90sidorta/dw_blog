@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import List, Optional
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -24,6 +24,12 @@ class BlogSubscribers(SQLModel, table=True):
 
 class Blog(BlogBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    name: str = Field(
+        min_length=3,
+        max_length=500,
+        nullable=False,
+        unique=True,
+    )
     authors: List["User"] = Relationship(
         back_populates="blogs",
         link_model=BlogAuthors,
@@ -41,3 +47,4 @@ class Blog(BlogBase, table=True):
         link_model=CategoryBlogs,
     )
     tags: List["Tag"] = Relationship(back_populates="blog")
+    posts: Optional[List["Post"]] = Relationship(back_populates="blog")

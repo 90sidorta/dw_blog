@@ -1,4 +1,5 @@
-- schemas to schemas, models to models
 - Add posts module
 - Add comments module
+- Develop user module
+- Check auth module
 - Add blacklisting users and tags and hide blogs, tags, posts and comments

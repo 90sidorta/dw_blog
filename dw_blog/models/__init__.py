@@ -4,3 +4,4 @@ from dw_blog.models.tag import Tag, TagPosts  # noqa
 from dw_blog.models.user import User  # noqa
 from dw_blog.models.blog import Blog, BlogAuthors, BlogLikes, BlogSubscribers  # noqa
 from dw_blog.models.category import Category, CategoryBlogs  # noqa
+from dw_blog.models.image import Image  # noqa

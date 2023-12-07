@@ -8,7 +8,10 @@ from dw_blog.routers.tag import router as tag_router
 from dw_blog.routers.user import router as user_router
 from dw_blog.routers.category import router as category_router
 
-app = FastAPI()
+app = FastAPI(
+    title="DW Blogging App",
+    version="0.0.1",
+)
 
 app.include_router(auth_router, tags=["Auth"], prefix="/auth")
 app.include_router(user_router, tags=["Users"], prefix="/users")
