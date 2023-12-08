@@ -40,7 +40,7 @@ class Post(PostBase, table=True):
         back_populates="posts",
         link_model=PostAuthors,
     )
-    images: Optional[List["Image"]] = Relationship(back_populates="post")
+    # images: Optional[List["Image"]] = Relationship(back_populates="post")
     blog_id: uuid.UUID = Field(
         default=None,
         foreign_key="blog.id",

@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Optional, List
 
 from sqlmodel import Field, SQLModel
 
@@ -20,8 +21,29 @@ class PostCreate(SQLModel):
     )
 
 
+class TagInPost(SQLModel):
+    id: uuid.UUID
+    name: str
+
+
+class AuthorInPost(SQLModel):
+    id: uuid.UUID
+    nickname: str
+
+
+class BlogInPost(SQLModel):
+    id: uuid.UUID
+    name: str
+
+
 class PostRead(PostBase):
     id: uuid.UUID
+    notes: Optional[List[str]] = None
+    bibliography: Optional[List[str]] = None
+    tags: List[TagInPost]
+    authors: List[AuthorInPost]
+    blog: BlogInPost
+
 
 
 class PostUpdate(PostCreate):

@@ -16,4 +16,4 @@ class Image(SQLModel, table=True):
     img_type: ImageType = Field(nullable=False)
     date_created: datetime = Field(default_factory=datetime.utcnow)
     date_modified: datetime = Field(default_factory=datetime.utcnow)
-    post: Post = Relationship(back_populates="images")
+    # post: Post = Relationship(back_populates="images")
