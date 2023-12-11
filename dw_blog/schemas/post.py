@@ -14,11 +14,14 @@ class PostBase(SQLModel):
 
 
 class PostCreate(SQLModel):
-    text: str = Field(
-        min_length=3,
-        max_length=30000,
-        nullable=False,
-    )
+    title: str = Field(min_length=3, max_length=500, nullable=False)
+    body: str = Field(min_length=50, max_length=10000, nullable=False)
+    published: bool = Field(nullable=False, default_factory=False)
+    bibliography: Optional[List[str]] = None
+    notes: Optional[List[str]] = None
+    tags_ids: List[uuid.UUID]
+    authors_ids: List[uuid.UUID]
+    blog_id: uuid.UUID
 
 
 class TagInPost(SQLModel):

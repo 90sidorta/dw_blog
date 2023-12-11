@@ -30,6 +30,14 @@ class AdminStatusRequired(HTTPException):
         )
 
 
+class AuthorStatusRequired(HTTPException):
+    def __init__(self, operation: str, user_id: UUID, blog_id: UUID):
+        super().__init__(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"To perform {operation} user {user_id} needs author status for blog {blog_id}!",
+        )
+
+
 class AdminOrAuthorRequired(HTTPException):
     def __init__(self, operation: str, entity: str):
         super().__init__(

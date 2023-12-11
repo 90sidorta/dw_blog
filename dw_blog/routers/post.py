@@ -14,7 +14,7 @@ router = APIRouter(route_class=RouteErrorHandler)
 
 @router.post(
     "",
-    response_model=PostRead,
+    # response_model=PostRead,
     status_code=status.HTTP_201_CREATED,
 )
 async def add_post(
