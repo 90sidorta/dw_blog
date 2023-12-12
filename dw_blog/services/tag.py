@@ -135,6 +135,23 @@ class TagService:
 
         return tag
 
+    async def bulk_get(self, tag_ids: List[UUID]) -> List[Tag]:
+        """Get multiple tags based on their ids
+        Args:
+            tag_ids (List[UUID]): list of tag ids
+        Raises:
+            TagNotFound: raised if no tag with
+            matching id exists
+        Returns:
+            List[Tag]: List of tag data
+        """
+        q = select(Tag).where(Tag.id.in_(tag_ids))
+        result = await self.db_session.exec(q)
+        tags = result.fetchall()
+        if len(tags) != len(tag_ids):
+            raise TagNotFound(tag_id=tag_ids)
+        return tags
+
     async def subscribe(
         self,
         tag_id: UUID,

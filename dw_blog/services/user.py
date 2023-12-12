@@ -65,6 +65,14 @@ class UserService:
 
         return user
 
+    async def bulk_get(self, user_ids: List[UUID]) -> User:
+        q = select(User).where(User.id.in_(user_ids))
+        result = await self.db_session.exec(q)
+        users = result.fetchall()
+        if len(users) != len(user_ids):
+            raise UserNotFound(error_message="Users not found!")
+        return users
+
     async def list(
         self,
         users_ids: Optional[List[UUID]] = None,
