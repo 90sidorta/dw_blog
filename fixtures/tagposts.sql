@@ -48,3 +48,4 @@ insert into "tagposts" ("post_id", "tag_id") values ('21ca8b55-a6ca-42b5-8e9f-c1
 insert into "tagposts" ("post_id", "tag_id") values ('465faf1a-b04f-42bd-8730-b2bfcf233ae5', '647afadc-9652-4234-bf5a-b557dff8b2f1');
 insert into "tagposts" ("post_id", "tag_id") values ('7af64f4e-b8dd-4d1c-9dec-080a52987433', 'bda8f440-684c-4fba-be89-4dde482ff24b');
 insert into "tagposts" ("post_id", "tag_id") values ('3d74d270-db38-4acb-9be8-21be58d0d871', '0a687127-e604-4540-9ff2-15d33e7b2ad2');
+insert into "tagposts" ("post_id", "tag_id") values ('35074371-53d2-43e2-ad81-684210a78081', '0a687127-e604-4540-9ff2-15d33e7b2ad2');

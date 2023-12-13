@@ -9,12 +9,14 @@ from sqlalchemy.orm import selectinload
 
 from dw_blog.db.db import get_session
 from dw_blog.exceptions.tag import TagNotThisBlog
+from dw_blog.queries.post import get_listed_posts_query
 from dw_blog.schemas.auth import AuthUser
 from dw_blog.exceptions.post import PostNotFound
-from dw_blog.exceptions.common import AuthorStatusRequired, EntityFailedAdd
+from dw_blog.exceptions.common import AuthorStatusRequired, EntityFailedAdd, PaginationLimitSurpassed
 from dw_blog.models.post import Post
 from dw_blog.models.post import Blog
-from dw_blog.schemas.post import PostRead, AuthorInPost, TagInPost
+from dw_blog.schemas.common import SortOrder
+from dw_blog.schemas.post import BlogInPost, PostRead, AuthorInPost, SortPostBy, TagInPost
 from dw_blog.services.user import UserService
 from dw_blog.services.blog import BlogService
 from dw_blog.services.tag import TagService
@@ -84,7 +86,7 @@ class PostService:
             self.db_session.add(post)
             await self.db_session.commit()
             await self.db_session.refresh(post)
-        except Exception as exc:
+        except Exception:
             raise EntityFailedAdd(entity_name="post")
 
         return await self.get(post_id=post.id)
@@ -108,6 +110,78 @@ class PostService:
             raise PostNotFound(post_id=post_id)
 
         return post
+
+    async def list(
+        self,
+        limit: int = 10,
+        offset: int = 0,
+        published: bool = True,
+        blog_id: Optional[UUID] = None,
+        authors_ids: Optional[List[UUID]] = None,
+        tags_ids: Optional[List[UUID]] = None,
+        title_search: Optional[str] = None,
+        body_search: Optional[str] = None,
+        sort_order: SortOrder = SortOrder.ascending,
+        sort_by: SortPostBy = SortPostBy.date_created,
+    ):
+        # Check limit
+        if limit > 20:
+            raise PaginationLimitSurpassed()
+        
+        # Create query
+        q_pag, q_all = get_listed_posts_query(
+            limit=limit,
+            offset=offset,
+            published=published,
+            blog_id=blog_id,
+            authors_ids=authors_ids,
+            tags_ids=tags_ids,
+            title_search=title_search,
+            body_search=body_search,
+            sort_order=sort_order,
+            sort_by=sort_by,
+        )
+
+        # Execute queries with and without limit
+        post_results = await self.db_session.exec(q_pag)
+        all_result = await self.db_session.exec(q_all)
+        posts = post_results.fetchall()
+        total = all_result.fetchall()
+
+        data = []
+        for post in posts:
+            data.append(
+                PostRead(
+                    id=post.id,
+                    title=post.title,
+                    published=post.published,
+                    date_created=post.date_created,
+                    date_modified=post.date_modified,
+                    body=post.body,
+                    notes=post.notes,
+                    bibliography=post.bibliography,
+                    tags=[
+                        TagInPost(
+                            id=tag_id,
+                            name=tag_name,
+                        )
+                        for tag_id, tag_name in zip(post.tags_ids, post.tags_names)
+                    ],
+                    authors=[
+                        AuthorInPost(
+                            id=author_id,
+                            nickname=author_nickname,
+                        )
+                        for author_id, author_nickname in zip(post.authors_ids, post.authors_nicknames)
+                    ],
+                    blog=BlogInPost(
+                        id=post.blog_id,
+                        name=post.blog_name,
+                    ),
+                )
+            )
+
+        return data, len(total)
 
     async def validate(
         self,

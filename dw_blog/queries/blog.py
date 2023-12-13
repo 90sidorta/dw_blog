@@ -2,7 +2,7 @@ from typing import Optional, Union, List
 from uuid import UUID
 from functools import reduce
 
-from sqlmodel import delete, func, select, or_, any_
+from sqlmodel import delete, func, select, or_
 
 from dw_blog.schemas.auth import AuthUser
 from dw_blog.models.blog import Blog, BlogAuthors, BlogLikes, BlogSubscribers

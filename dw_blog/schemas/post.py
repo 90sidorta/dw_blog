@@ -1,8 +1,16 @@
+from enum import Enum
 import uuid
 from datetime import datetime
 from typing import Optional, List
 
 from sqlmodel import Field, SQLModel
+
+from dw_blog.schemas.common import Pagination, Sort
+
+
+class SortPostBy(str, Enum):
+    title = "name"
+    date_created = "date_created"
 
 
 class PostBase(SQLModel):
@@ -48,10 +56,15 @@ class PostRead(PostBase):
     blog: BlogInPost
 
 
-
 class PostUpdate(PostCreate):
     pass
 
 
 class PostDelete(SQLModel):
     id: uuid.UUID
+
+
+class ReadBlogsPagination(SQLModel):
+    data: List[PostRead]
+    pagination: Pagination
+    sort: Sort
