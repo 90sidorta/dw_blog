@@ -56,8 +56,14 @@ class PostRead(PostBase):
     blog: BlogInPost
 
 
-class PostUpdate(PostCreate):
-    pass
+class PostUpdate(SQLModel):
+    title: Optional[str] = Field(min_length=3, max_length=500, nullable=True)
+    body: Optional[str] = Field(min_length=50, max_length=10000, nullable=True)
+    published: Optional[bool] = None
+    bibliography: Optional[List[str]] = None
+    notes: Optional[List[str]] = None
+    tags_ids: Optional[List[uuid.UUID]] = None
+    authors_ids: Optional[List[uuid.UUID]]
 
 
 class PostDelete(SQLModel):

@@ -12,7 +12,7 @@ from dw_blog.exceptions.tag import TagNotThisBlog
 from dw_blog.queries.post import get_listed_posts_query
 from dw_blog.schemas.auth import AuthUser
 from dw_blog.exceptions.post import PostNotFound
-from dw_blog.exceptions.common import AuthorStatusRequired, EntityFailedAdd, PaginationLimitSurpassed
+from dw_blog.exceptions.common import AuthorStatusRequired, EntityDeleteFail, EntityFailedAdd, EntityUpdateFail, PaginationLimitSurpassed
 from dw_blog.models.post import Post
 from dw_blog.models.post import Blog
 from dw_blog.schemas.common import SortOrder
@@ -182,6 +182,88 @@ class PostService:
             )
 
         return data, len(total)
+
+    async def update(
+        self,
+        post_id: UUID,
+        current_user: AuthUser,
+        title: Optional[str] = None,
+        body: Optional[str] = None,
+        published: Optional[bool] = None,
+        bibliography: Optional[List[str]] = None,
+        notes: Optional[List[str]] = None,
+        tags_ids: Optional[List[UUID]] = None,
+        authors_ids: Optional[List[UUID]] = None,
+    ) -> PostRead:
+        # Get post
+        post = await self.get(post_id=post_id)
+
+        # Check if user that updates post is author/ admin
+        await self.blog_service.check_blog_permissions(
+            blog_id=post.blog_id,
+            current_user=current_user,
+            operation="post update",
+        )
+
+        # Check if submitted data is valid
+        await self.validate(
+            blog_id=post.blog_id,
+            authors_ids=authors_ids,
+            blog_authors=post.authors,
+            tags_ids=tags_ids,
+            blog_tags=post.tags,
+        )
+
+        # Get authors and tags
+        if authors_ids:
+            authors = await self.user_service.bulk_get(authors_ids)
+            post.authors = authors
+        if tags_ids:
+            tags = await self.tag_service.bulk_get(tags_ids)
+            post.tags = tags
+
+        # Update post
+        if title:
+            post.title = title
+        if body:
+            post.body = body
+        if published is not None:
+            post.published = published
+        if bibliography:
+            post.bibliography = bibliography
+        if notes:
+            post.notes = notes
+        post.date_modified = datetime.now()
+
+        try:
+            await self.db_session.commit()
+            await self.db_session.refresh(post)
+        except Exception:
+            raise EntityUpdateFail(entity_id=post_id, entity_name="post")
+
+        return await self.get(post_id=post_id)
+        
+    async def delete(
+        self,
+        post_id: UUID,
+        current_user: AuthUser,
+    ):
+        # Get post
+        post = await self.get(post_id=post_id)
+
+        # Check if user that deletes post is author/ admin
+        await self.blog_service.check_blog_permissions(
+            blog_id=post.blog_id,
+            current_user=current_user,
+            operation="post deletion",
+        )
+
+        # Delete post
+        try:
+            self.db_session.delete(post)
+            await self.db_session.commit()
+        except Exception:
+            raise EntityDeleteFail(entity_id=post_id, entity_name="post")
 
     async def validate(
         self,
