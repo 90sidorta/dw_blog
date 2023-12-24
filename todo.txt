@@ -1,3 +1,4 @@
+- Create seed db script for fixtures
 - Add posts module
 - Add comments module
 - Develop user module

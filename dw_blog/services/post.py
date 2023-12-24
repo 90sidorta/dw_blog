@@ -54,7 +54,7 @@ class PostService:
         # Get raw blog
         raw_blog = await self.db_session.get(Blog, blog_id)
 
-        # Chek if submitted data is valid
+        # Check if submitted data is valid
         await self.validate(
             blog_id=blog_id,
             authors_ids=authors_ids,
