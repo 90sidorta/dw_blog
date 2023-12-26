@@ -16,7 +16,7 @@ from dw_blog.exceptions.common import AuthorStatusRequired, EntityDeleteFail, En
 from dw_blog.models.post import Post
 from dw_blog.models.post import Blog
 from dw_blog.schemas.common import SortOrder
-from dw_blog.schemas.post import BlogInPost, PostRead, AuthorInPost, SortPostBy, TagInPost
+from dw_blog.schemas.post import BlogInPost, PostRead, AuthorInPost, SortPostBy, TagInPost, LikerOfPost
 from dw_blog.services.user import UserService
 from dw_blog.services.blog import BlogService
 from dw_blog.services.tag import TagService
@@ -42,6 +42,7 @@ class PostService:
         notes: Optional[List[str]] = None,
 
     ) -> PostRead:
+        # TODO Implement error handling for duplicated title
         # Check if user that adds post is author/ admin
         await self.blog_service.check_blog_permissions(
             blog_id=blog_id,
@@ -101,6 +102,8 @@ class PostService:
                 selectinload(Post.authors),
                 selectinload(Post.blog),
                 selectinload(Post.tags),
+                selectinload(Post.likers),
+                selectinload(Post.favouriters),
             )
             .where(Post.id == post_id)
         )
@@ -174,6 +177,13 @@ class PostService:
                         )
                         for author_id, author_nickname in zip(post.authors_ids, post.authors_nicknames)
                     ],
+                    likers=[
+                        LikerOfPost(
+                            id=liker_id,
+                            nickname=liker_nickname,
+                        )
+                        for liker_id, liker_nickname in zip(post.likers_ids, post.likers_nicknames) if liker_id
+                    ],
                     blog=BlogInPost(
                         id=post.blog_id,
                         name=post.blog_name,
@@ -195,6 +205,7 @@ class PostService:
         tags_ids: Optional[List[UUID]] = None,
         authors_ids: Optional[List[UUID]] = None,
     ) -> PostRead:
+        # TODO Implement error handling for duplicated title
         # Get post
         post = await self.get(post_id=post_id)
 
@@ -242,7 +253,35 @@ class PostService:
             raise EntityUpdateFail(entity_id=post_id, entity_name="post")
 
         return await self.get(post_id=post_id)
-        
+
+    async def like_post(
+        self,
+        post_id: UUID,
+        current_user: AuthUser,
+    ):
+        # Get post
+        post = await self.get(post_id=post_id)
+
+        # Check if user that likes post is not author
+        await self.blog_service.check_blog_permissions(
+            blog_id=post.blog_id,
+            current_user=current_user,
+            operation="post liking",
+        )
+
+        # Like post
+        post.likers.append(current_user)
+
+        try:
+            await self.db_session.commit()
+            await self.db_session.refresh(post)
+        except Exception:
+            raise EntityUpdateFail(entity_id=post_id, entity_name="post")
+
+        return await self.get(post_id=post_id)
+
+
+
     async def delete(
         self,
         post_id: UUID,

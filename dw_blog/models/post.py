@@ -15,6 +15,16 @@ class PostAuthors(SQLModel, table=True):
     author_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
 
 
+class PostLikers(SQLModel, table=True):
+    post_id: uuid.UUID = Field(foreign_key="post.id", primary_key=True)
+    liker_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
+
+
+class PostFavourites(SQLModel, table=True):
+    post_id: uuid.UUID = Field(foreign_key="post.id", primary_key=True)
+    favouriter_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
+
+
 class Post(PostBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     notes: Optional[List[str]] = Field(
@@ -39,6 +49,14 @@ class Post(PostBase, table=True):
     authors: List["User"] = Relationship(
         back_populates="posts",
         link_model=PostAuthors,
+    )
+    likers: List["User"] = Relationship(
+        back_populates="liked_posts",
+        link_model=PostLikers,
+    )
+    favouriters: List["User"] = Relationship(
+        back_populates="favourite_posts",
+        link_model=PostFavourites,
     )
     # images: Optional[List["Image"]] = Relationship(back_populates="post")
     blog_id: uuid.UUID = Field(

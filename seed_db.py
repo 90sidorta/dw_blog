@@ -27,6 +27,8 @@ fixture_files = [
     "posts.sql",
     "tagposts.sql",
     "postauthors.sql",
+    "postlikers.sql",
+    "postfavourites.sql",
 ]
 
 # Check if the environment is dev

@@ -5,11 +5,13 @@ from uuid import UUID
 from sqlmodel import select, func, or_
 from dw_blog.models.blog import Blog
 
-from dw_blog.models.post import Post, PostAuthors
+from dw_blog.models.post import Post, PostAuthors, PostLikers
 from dw_blog.models.tag import Tag, TagPosts
 from dw_blog.models.user import User
 from dw_blog.schemas.common import SortOrder
 from dw_blog.schemas.post import SortPostBy
+
+UserLiker = User.__table__.alias()
 
 
 def get_listed_posts_query(
@@ -36,16 +38,20 @@ def get_listed_posts_query(
             Post.body.label("body"),
             Blog.id.label("blog_id"),
             Blog.name.label("blog_name"),
-            func.array_agg(Tag.id).label("tags_ids"),
-            func.array_agg(Tag.name).label("tags_names"),
-            func.array_agg(User.id).label("authors_ids"),
-            func.array_agg(User.nickname).label("authors_nicknames"),
+            func.array_agg(func.distinct(Tag.id)).label("tags_ids"),
+            func.array_agg(func.distinct(Tag.name)).label("tags_names"),
+            func.array_agg(func.distinct(User.id)).label("authors_ids"),
+            func.array_agg(func.distinct(User.nickname)).label("authors_nicknames"),
+            func.array_agg(func.distinct(UserLiker.c.id)).label("likers_ids"),
+            func.array_agg(func.distinct(UserLiker.c.nickname)).label("likers_nicknames"),
         )
         .join(Blog, onclause=Blog.id == Post.blog_id, isouter=True)
         .join(TagPosts, onclause=TagPosts.post_id == Post.id, isouter=True)
         .join(Tag, onclause=Tag.id == TagPosts.tag_id, isouter=True)
         .join(PostAuthors, onclause=PostAuthors.post_id == Post.id, isouter=True)
         .join(User, onclause=User.id == PostAuthors.author_id, isouter=True)
+        .join(PostLikers, onclause=PostLikers.post_id == Post.id, isouter=True)
+        .join(UserLiker, onclause=UserLiker.c.id == PostLikers.liker_id, isouter=True)
         .group_by(Post.id, Blog.id)
         .alias()
     )
@@ -64,6 +70,8 @@ def get_listed_posts_query(
         sub_q.c.tags_names,
         sub_q.c.authors_ids,
         sub_q.c.authors_nicknames,
+        sub_q.c.likers_ids,
+        sub_q.c.likers_nicknames,
     )
 
     # Filter by blog_id

@@ -1,0 +1,14 @@
+insert into "postfavourites" ("post_id", "favouriter_id") values ('35074371-53d2-43e2-ad81-684210a78081', '1d069d87-33b0-4de9-be1c-177aca9e62c5');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('35074371-53d2-43e2-ad81-684210a78081', '883ebfbb-c687-4362-a97d-76a3bfced5d7');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('35074371-53d2-43e2-ad81-684210a78081', '4eb2d2d9-fbf6-48cc-83b9-d0308eceb8ff');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('35074371-53d2-43e2-ad81-684210a78081', '566250cb-beae-4cf4-8fd6-bc2586330c5e');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('35074371-53d2-43e2-ad81-684210a78081', 'a75751db-ab1b-4c13-ad4d-638827e78d2d');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('35074371-53d2-43e2-ad81-684210a78081', 'a1bbcd0f-a8a0-4a2b-8aa9-ad53e0c244ff');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('35074371-53d2-43e2-ad81-684210a78081', '0693ec4a-dcc6-4b18-9bc9-8c903e5da379');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('35074371-53d2-43e2-ad81-684210a78081', '30893ce9-a1cf-42a3-b9be-a02c88d6b25a');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('35074371-53d2-43e2-ad81-684210a78081', 'b60c6e11-9fe6-4209-821c-b3f62f80c257');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('35074371-53d2-43e2-ad81-684210a78081', '4c914461-c8c9-49f2-a7c8-7daab7783486');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('dd5d26bf-e889-473c-a5f9-ddfc57716892', '1d069d87-33b0-4de9-be1c-177aca9e62c5');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('dd5d26bf-e889-473c-a5f9-ddfc57716892', '883ebfbb-c687-4362-a97d-76a3bfced5d7');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('dd5d26bf-e889-473c-a5f9-ddfc57716892', 'e430b13d-ec82-44c0-9ed4-ff02e6908f7c');
+insert into "postfavourites" ("post_id", "favouriter_id") values ('dd5d26bf-e889-473c-a5f9-ddfc57716892', 'e14f29e2-102b-4824-94eb-af081c22bd06');

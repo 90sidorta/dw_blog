@@ -5,7 +5,7 @@ from sqlmodel import Field, Relationship
 
 from dw_blog.models.blog import Blog, BlogAuthors, BlogLikes, BlogSubscribers
 from dw_blog.models.tag import TagSubscribers, Tag
-from dw_blog.models.post import Post, PostAuthors
+from dw_blog.models.post import Post, PostAuthors, PostLikers, PostFavourites
 # from dw_blog.models.category import Category, CategoryFavourite
 from dw_blog.schemas.user import UserBase
 
@@ -28,6 +28,14 @@ class User(UserBase, table=True):
     subscribed_tags: Optional[List[Tag]] = Relationship(
         back_populates="subscribers",
         link_model=TagSubscribers,
+    )
+    liked_posts: Optional[List[Post]] = Relationship(
+        back_populates="likers",
+        link_model=PostLikers,
+    )
+    favourite_posts: Optional[List[Post]] = Relationship(
+        back_populates="favouriters",
+        link_model=PostFavourites,
     )
     posts: Optional[List[Post]] = Relationship(
         back_populates="authors",
