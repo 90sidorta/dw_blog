@@ -5,18 +5,19 @@ from uuid import UUID
 from fastapi import Depends
 from sqlmodel import Session, select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from dw_blog.db.db import get_session
 from dw_blog.exceptions.tag import TagNotThisBlog
 from dw_blog.queries.post import get_listed_posts_query
 from dw_blog.schemas.auth import AuthUser
-from dw_blog.exceptions.post import PostNotFound
+from dw_blog.exceptions.post import PostAlreadyLiked, PostAuthorLike, PostNotFound, PostNotLiked, PostTitleDuplicate
 from dw_blog.exceptions.common import AuthorStatusRequired, EntityDeleteFail, EntityFailedAdd, EntityUpdateFail, PaginationLimitSurpassed
 from dw_blog.models.post import Post
 from dw_blog.models.post import Blog
 from dw_blog.schemas.common import SortOrder
-from dw_blog.schemas.post import BlogInPost, PostRead, AuthorInPost, SortPostBy, TagInPost, LikerOfPost
+from dw_blog.schemas.post import BlogInPost, PostRead, AuthorInPost, PostsRead, SortPostBy, TagInPost, LikerOfPost
 from dw_blog.services.user import UserService
 from dw_blog.services.blog import BlogService
 from dw_blog.services.tag import TagService
@@ -42,7 +43,6 @@ class PostService:
         notes: Optional[List[str]] = None,
 
     ) -> PostRead:
-        # TODO Implement error handling for duplicated title
         # Check if user that adds post is author/ admin
         await self.blog_service.check_blog_permissions(
             blog_id=blog_id,
@@ -87,6 +87,8 @@ class PostService:
             self.db_session.add(post)
             await self.db_session.commit()
             await self.db_session.refresh(post)
+        except IntegrityError:
+            raise PostTitleDuplicate(title=title, blog_id=blog_id)
         except Exception:
             raise EntityFailedAdd(entity_name="post")
 
@@ -154,7 +156,7 @@ class PostService:
         data = []
         for post in posts:
             data.append(
-                PostRead(
+                PostsRead(
                     id=post.id,
                     title=post.title,
                     published=post.published,
@@ -188,6 +190,7 @@ class PostService:
                         id=post.blog_id,
                         name=post.blog_name,
                     ),
+                    likes_count=post.likes_count,
                 )
             )
 
@@ -205,9 +208,10 @@ class PostService:
         tags_ids: Optional[List[UUID]] = None,
         authors_ids: Optional[List[UUID]] = None,
     ) -> PostRead:
-        # TODO Implement error handling for duplicated title
         # Get post
         post = await self.get(post_id=post_id)
+        # Get blog with authors and tags
+        blog = await self.blog_service.get(blog_id=post.blog_id)
 
         # Check if user that updates post is author/ admin
         await self.blog_service.check_blog_permissions(
@@ -220,9 +224,9 @@ class PostService:
         await self.validate(
             blog_id=post.blog_id,
             authors_ids=authors_ids,
-            blog_authors=post.authors,
+            blog_authors=blog.authors,
             tags_ids=tags_ids,
-            blog_tags=post.tags,
+            blog_tags=blog.tags,
         )
 
         # Get authors and tags
@@ -249,12 +253,14 @@ class PostService:
         try:
             await self.db_session.commit()
             await self.db_session.refresh(post)
+        except IntegrityError:
+            raise PostTitleDuplicate(title=title, blog_id=post.blog_id)
         except Exception:
             raise EntityUpdateFail(entity_id=post_id, entity_name="post")
 
         return await self.get(post_id=post_id)
 
-    async def like_post(
+    async def like(
         self,
         post_id: UUID,
         current_user: AuthUser,
@@ -263,15 +269,20 @@ class PostService:
         post = await self.get(post_id=post_id)
 
         # Check if user that likes post is not author
-        await self.blog_service.check_blog_permissions(
-            blog_id=post.blog_id,
-            current_user=current_user,
-            operation="post liking",
-        )
+        post_authors_ids = [str(author.id) for author in post.authors]
+        if str(current_user["user_id"]) in post_authors_ids:
+            raise PostAuthorLike(post_id=post_id)
+        
+        # Check if user already liked post
+        post_likers_ids = [str(liker.id) for liker in post.likers]
+        if str(current_user["user_id"]) in post_likers_ids:
+            raise PostAlreadyLiked(post_id=post_id, user_id=current_user["user_id"])
 
         # Like post
-        post.likers.append(current_user)
+        liker = await self.user_service.bulk_get(user_ids=[current_user["user_id"]])
+        post.likers.append(liker[0])
 
+        # Try to save in the db
         try:
             await self.db_session.commit()
             await self.db_session.refresh(post)
@@ -280,7 +291,30 @@ class PostService:
 
         return await self.get(post_id=post_id)
 
+    async def unlike(
+        self,
+        post_id: UUID,
+        current_user: AuthUser,
+    ):
+        # Get post
+        post = await self.get(post_id=post_id)
 
+        # Check if user already liked post
+        post_likers_ids = [str(liker.id) for liker in post.likers]
+        if str(current_user["user_id"]) not in post_likers_ids:
+            raise PostNotLiked(post_id=post_id, user_id=current_user["user_id"])
+
+        # Unlike post
+        post.likers = [liker for liker in post.likers if str(liker.id) != str(current_user["user_id"])]
+
+        # Try to save in the db
+        try:
+            await self.db_session.commit()
+            await self.db_session.refresh(post)
+        except Exception:
+            raise EntityUpdateFail(entity_id=post_id, entity_name="post")
+
+        return await self.get(post_id=post_id)
 
     async def delete(
         self,

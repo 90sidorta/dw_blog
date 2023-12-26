@@ -44,6 +44,7 @@ def get_listed_posts_query(
             func.array_agg(func.distinct(User.nickname)).label("authors_nicknames"),
             func.array_agg(func.distinct(UserLiker.c.id)).label("likers_ids"),
             func.array_agg(func.distinct(UserLiker.c.nickname)).label("likers_nicknames"),
+            func.count(func.distinct(UserLiker.c.id)).label("likes_count"),
         )
         .join(Blog, onclause=Blog.id == Post.blog_id, isouter=True)
         .join(TagPosts, onclause=TagPosts.post_id == Post.id, isouter=True)
@@ -72,6 +73,7 @@ def get_listed_posts_query(
         sub_q.c.authors_nicknames,
         sub_q.c.likers_ids,
         sub_q.c.likers_nicknames,
+        sub_q.c.likes_count,
     )
 
     # Filter by blog_id
@@ -111,6 +113,11 @@ def get_listed_posts_query(
             q = q.order_by(sub_q.c.title.asc())
         else:
             q = q.order_by(sub_q.c.title.desc())
+    elif sort_by == SortPostBy.likers:
+        if sort_order == SortOrder.ascending:
+            q = q.order_by(sub_q.c.likes_count)
+        else:
+            q = q.order_by(sub_q.c.likes_count.desc())
 
     # Assign query for count of all records
     q_all = q

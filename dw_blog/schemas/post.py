@@ -11,6 +11,7 @@ from dw_blog.schemas.common import Pagination, Sort
 class SortPostBy(str, Enum):
     title = "name"
     date_created = "date_created"
+    likers = "likers"
 
 
 class PostBase(SQLModel):
@@ -62,6 +63,10 @@ class PostRead(PostBase):
     blog: BlogInPost
 
 
+class PostsRead(PostRead):
+    likes_count: int
+
+
 class PostUpdate(SQLModel):
     title: Optional[str] = Field(min_length=3, max_length=500, nullable=True)
     body: Optional[str] = Field(min_length=50, max_length=10000, nullable=True)
@@ -77,6 +82,6 @@ class PostDelete(SQLModel):
 
 
 class ReadBlogsPagination(SQLModel):
-    data: List[PostRead]
+    data: List[PostsRead]
     pagination: Pagination
     sort: Sort

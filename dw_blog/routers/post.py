@@ -101,30 +101,30 @@ async def update_post(
     )
 
 
-# @router.post(
-#     "/{post_id}/like",
-#     response_model=PostRead,
-#     status_code=status.HTTP_200_OK,
-# )
-# async def like_post(
-#     post_id: UUID,
-#     post_service: PostService = Depends(get_post_service),
-#     current_user: AuthUser = Depends(get_current_user),
-# ):
-#     return await post_service.like(post_id=post_id, current_user=current_user)
-#
-#
-# @router.post(
-#     "/{post_id}/unlike",
-#     response_model=PostRead,
-#     status_code=status.HTTP_200_OK,
-# )
-# async def unlike_post(
-#     post_id: UUID,
-#     post_service: PostService = Depends(get_post_service),
-#     current_user: AuthUser = Depends(get_current_user),
-# ):
-#     return await post_service.unlike(post_id=post_id, current_user=current_user)
+@router.post(
+    "/{post_id}/like",
+    response_model=PostRead,
+    status_code=status.HTTP_200_OK,
+)
+async def like_post(
+    post_id: UUID,
+    post_service: PostService = Depends(get_post_service),
+    current_user: AuthUser = Depends(get_current_user),
+):
+    return await post_service.like(post_id=post_id, current_user=current_user)
+
+
+@router.post(
+    "/{post_id}/unlike",
+    response_model=PostRead,
+    status_code=status.HTTP_200_OK,
+)
+async def unlike_post(
+    post_id: UUID,
+    post_service: PostService = Depends(get_post_service),
+    current_user: AuthUser = Depends(get_current_user),
+):
+    return await post_service.unlike(post_id=post_id, current_user=current_user)
 
 
 @router.delete(
