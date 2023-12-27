@@ -63,6 +63,21 @@ class PostRead(PostBase):
     blog: BlogInPost
 
 
+class ShortPostRead(SQLModel):
+    id: uuid.UUID
+    title: str
+    body: str
+    date_created: datetime
+    blog_id: uuid.UUID
+    blog_name: str
+
+
+class ShortPostResponse(SQLModel):
+    data: List[ShortPostRead]
+    offset: int
+    total: int
+
+
 class PostsRead(PostRead):
     likes_count: int
 

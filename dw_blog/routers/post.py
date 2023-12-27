@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query, status
 
 from dw_blog.schemas.auth import AuthUser
 from dw_blog.schemas.common import Pagination, Sort, SortOrder
-from dw_blog.schemas.post import PostCreate, PostRead, ReadBlogsPagination, SortPostBy, PostUpdate
+from dw_blog.schemas.post import PostCreate, PostRead, ReadBlogsPagination, ShortPostResponse, SortPostBy, PostUpdate
 from dw_blog.services.post import PostService, get_post_service
 from dw_blog.utils.auth import get_current_user
 from errors import RouteErrorHandler
@@ -27,6 +27,25 @@ async def add_post(
 
 
 @router.get(
+    "/list_user_posts",
+    response_model=ShortPostResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def list_user_posts(
+    liked: bool = True,
+    offset: int = 0,
+    post_service: PostService = Depends(get_post_service),
+    current_user: AuthUser = Depends(get_current_user),
+):
+    data, total = await post_service.list_user_posts(current_user=current_user, liked=liked, offset=offset)
+    return ShortPostResponse(
+        data=data,
+        offset=offset,
+        total=total,
+    )
+
+
+@router.get(
     "/{post_id}",
     response_model=PostRead,
     status_code=status.HTTP_200_OK,
@@ -39,7 +58,7 @@ async def get_post(
 
 
 @router.get(
-    "/",
+    "",
     response_model=ReadBlogsPagination,
     status_code=status.HTTP_200_OK,
 )
@@ -125,6 +144,32 @@ async def unlike_post(
     current_user: AuthUser = Depends(get_current_user),
 ):
     return await post_service.unlike(post_id=post_id, current_user=current_user)
+
+
+@router.post(
+    "/{post_id}/add_favourite",
+    response_model=PostRead,
+    status_code=status.HTTP_200_OK,
+)
+async def add_favourite_post(
+    post_id: UUID,
+    post_service: PostService = Depends(get_post_service),
+    current_user: AuthUser = Depends(get_current_user),
+):
+    return await post_service.add_favourite(post_id=post_id, current_user=current_user)
+
+
+@router.post(
+    "/{post_id}/remove_favourite",
+    response_model=PostRead,
+    status_code=status.HTTP_200_OK,
+)
+async def remove_favourite_post(
+    post_id: UUID,
+    post_service: PostService = Depends(get_post_service),
+    current_user: AuthUser = Depends(get_current_user),
+):
+    return await post_service.remove_favourite(post_id=post_id, current_user=current_user)
 
 
 @router.delete(

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import Depends
@@ -8,16 +8,17 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
+
 from dw_blog.db.db import get_session
 from dw_blog.exceptions.tag import TagNotThisBlog
-from dw_blog.queries.post import get_listed_posts_query
+from dw_blog.queries.post import get_listed_posts_query, get_listed_user_posts_query
 from dw_blog.schemas.auth import AuthUser
-from dw_blog.exceptions.post import PostAlreadyLiked, PostAuthorLike, PostNotFound, PostNotLiked, PostTitleDuplicate
+from dw_blog.exceptions.post import PostAlreadyLiked, PostAlreadyMarked, PostAuthorLike, PostNotFound, PostNotLiked, PostNotMarked, PostTitleDuplicate
 from dw_blog.exceptions.common import AuthorStatusRequired, EntityDeleteFail, EntityFailedAdd, EntityUpdateFail, PaginationLimitSurpassed
 from dw_blog.models.post import Post
 from dw_blog.models.post import Blog
 from dw_blog.schemas.common import SortOrder
-from dw_blog.schemas.post import BlogInPost, PostRead, AuthorInPost, PostsRead, SortPostBy, TagInPost, LikerOfPost
+from dw_blog.schemas.post import BlogInPost, PostRead, AuthorInPost, PostsRead, ShortPostRead, SortPostBy, TagInPost, LikerOfPost
 from dw_blog.services.user import UserService
 from dw_blog.services.blog import BlogService
 from dw_blog.services.tag import TagService
@@ -41,7 +42,6 @@ class PostService:
         published: bool,
         bibliography: Optional[List[str]] = None,
         notes: Optional[List[str]] = None,
-
     ) -> PostRead:
         # Check if user that adds post is author/ admin
         await self.blog_service.check_blog_permissions(
@@ -193,7 +193,8 @@ class PostService:
                     likes_count=post.likes_count,
                 )
             )
-
+        
+        # Return data
         return data, len(total)
 
     async def update(
@@ -315,6 +316,92 @@ class PostService:
             raise EntityUpdateFail(entity_id=post_id, entity_name="post")
 
         return await self.get(post_id=post_id)
+
+    async def add_favourite(
+        self,
+        post_id: UUID,
+        current_user: AuthUser,
+    ):
+        # Get post
+        post = await self.get(post_id=post_id)
+
+        # Check if user already marked post
+        post_favouriters_ids = [str(favouriter.id) for favouriter in post.favouriters]
+        if str(current_user["user_id"]) in post_favouriters_ids:
+            raise PostAlreadyMarked(post_id=post_id, user_id=current_user["user_id"])
+
+        # Add post to favourites
+        favouriter = await self.user_service.bulk_get(user_ids=[current_user["user_id"]])
+        post.favouriters.append(favouriter[0])
+
+        # Try to save in the db
+        try:
+            await self.db_session.commit()
+            await self.db_session.refresh(post)
+        except Exception:
+            raise EntityUpdateFail(entity_id=post_id, entity_name="post")
+
+        return await self.get(post_id=post_id)
+
+    async def remove_favourite(
+        self,
+        post_id: UUID,
+        current_user: AuthUser,
+    ):
+        # Get post
+        post = await self.get(post_id=post_id)
+
+        # Check if user marked the post
+        post_favouriters_ids = [str(favouriter.id) for favouriter in post.favouriters]
+        if str(current_user["user_id"]) not in post_favouriters_ids:
+            raise PostNotMarked(post_id=post_id, user_id=current_user["user_id"])
+
+        # Remove post from favourites
+        post.favouriters = [favouriter for favouriter in post.favouriters if str(favouriter.id) != str(current_user["user_id"])]
+
+        # Try to save in the db
+        try:
+            await self.db_session.commit()
+            await self.db_session.refresh(post)
+        except Exception:
+            raise EntityUpdateFail(entity_id=post_id, entity_name="post")
+
+        return await self.get(post_id=post_id)
+
+    async def list_user_posts(
+        self,
+        current_user: AuthUser,
+        liked: bool = True,
+        offset: int = 0,
+    ) -> Union[List[ShortPostRead], int]:
+        user_id = current_user["user_id"] 
+        # Create query
+        q_pag, q_all = get_listed_user_posts_query(
+            user_id=user_id,
+            liked=liked,
+            offset=offset,
+        )
+        
+        # Execute queries with and without limit
+        post_results = await self.db_session.exec(q_pag)
+        all_result = await self.db_session.exec(q_all)
+        posts = post_results.fetchall()
+        total = all_result.fetchall()
+        
+        data = []
+        for post in posts:
+            data.append(
+                ShortPostRead(
+                    id=post.id,
+                    title=post.title,
+                    body=post.body[:31].strip() + "...",
+                    blog_id=post.blog.id,
+                    blog_name=post.blog.name,
+                    date_created=post.date_created,
+                )
+            )
+
+        return data, len(total)
 
     async def delete(
         self,

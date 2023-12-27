@@ -35,6 +35,22 @@ class PostNotLiked(HTTPException):
         )
 
 
+class PostAlreadyMarked(HTTPException):
+    def __init__(self, post_id: UUID, user_id: UUID):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Post {post_id} already marked as favourite by user {user_id}!",
+        )
+
+
+class PostNotMarked(HTTPException):
+    def __init__(self, post_id: UUID, user_id: UUID):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Post {post_id} not marked as favourite by user {user_id}!",
+        )
+
+
 class PostTitleDuplicate(HTTPException):
     def __init__(self, title: str, blog_id: UUID):
         super().__init__(

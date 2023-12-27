@@ -3,9 +3,10 @@ from typing import List, Optional
 from uuid import UUID
 
 from sqlmodel import select, func, or_
-from dw_blog.models.blog import Blog
+from sqlalchemy.orm import selectinload
 
-from dw_blog.models.post import Post, PostAuthors, PostLikers
+from dw_blog.models.blog import Blog
+from dw_blog.models.post import Post, PostAuthors, PostLikers, PostFavourites
 from dw_blog.models.tag import Tag, TagPosts
 from dw_blog.models.user import User
 from dw_blog.schemas.common import SortOrder
@@ -14,18 +15,7 @@ from dw_blog.schemas.post import SortPostBy
 UserLiker = User.__table__.alias()
 
 
-def get_listed_posts_query(
-    limit: int,
-    offset: int,
-    published: bool,
-    blog_id: Optional[UUID] = None,
-    authors_ids: Optional[List[UUID]] = None,
-    tags_ids: Optional[List[UUID]] = None,
-    title_search: Optional[str] = None,
-    body_search: Optional[str] = None,
-    sort_order: SortOrder = SortOrder.ascending,
-    sort_by: SortPostBy = SortPostBy.date_created,
-):
+def basic_post_queries():
     sub_q = (
         select(
             Post.id.label("id"),
@@ -75,6 +65,24 @@ def get_listed_posts_query(
         sub_q.c.likers_nicknames,
         sub_q.c.likes_count,
     )
+    
+    return q, sub_q
+
+
+def get_listed_posts_query(
+    limit: int,
+    offset: int,
+    published: bool,
+    blog_id: Optional[UUID] = None,
+    authors_ids: Optional[List[UUID]] = None,
+    tags_ids: Optional[List[UUID]] = None,
+    title_search: Optional[str] = None,
+    body_search: Optional[str] = None,
+    sort_order: SortOrder = SortOrder.ascending,
+    sort_by: SortPostBy = SortPostBy.date_created,
+):
+    # Get basic queries
+    q, sub_q = basic_post_queries()
 
     # Filter by blog_id
     if blog_id:
@@ -125,3 +133,39 @@ def get_listed_posts_query(
     q_pag = q.limit(limit).offset(offset)
 
     return q_pag, q_all
+
+def get_listed_user_posts_query(
+    user_id: UUID,
+    liked: bool = True,
+    offset: int = 0,
+):
+    # Get basic query
+    base_q = (
+        select(Post)
+        .options(selectinload(Post.blog))
+    )
+    
+    # Extend query depending on liked
+    if liked:
+        q = (
+            base_q
+            .join(PostLikers, onclause=Post.id == PostLikers.post_id, isouter=True)
+            .where(PostLikers.liker_id == user_id, Post.published == True)
+        )
+    else:
+        q = (
+            base_q
+            .join(PostFavourites, onclause=Post.id == PostFavourites.post_id, isouter=True)
+            .where(PostFavourites.favouriter_id == user_id, Post.published == True)
+        )
+
+    # Order by date_created
+    q = q.order_by(Post.date_created)            
+    
+    # Assign query for count of all records
+    q_all = q
+    # Add pagination to query
+    q_pag = q.limit(20).offset(offset)
+    
+    # Return query
+    return q_all, q_pag
